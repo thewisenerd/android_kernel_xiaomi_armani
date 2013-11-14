@@ -81,6 +81,12 @@ void wcnss_riva_dump_pmic_regs(void);
 int wcnss_xo_auto_detect_enabled(void);
 u32 wcnss_get_wlan_rx_buff_count(void);
 int wcnss_wlan_iris_xo_mode(void);
+int wcnss_set_wlan_unsafe_channel(
+				u16 *unsafe_ch_list, u16 ch_count);
+int wcnss_get_wlan_unsafe_channel(
+				u16 *unsafe_ch_list, u16 buffer_size,
+				u16 *ch_count);
+				
 #ifdef CONFIG_WCNSS_REGISTER_DUMP_ON_BITE
 void wcnss_log_debug_regs_on_bite(void);
 #else
