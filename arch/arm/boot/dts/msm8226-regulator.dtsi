@@ -80,7 +80,7 @@
 		vdd-apc-supply = <&pm8226_s2>;
 
 		vdd-mx-supply = <&pm8226_l3_ao>;
-		qcom,vdd-mx-vmax = <1350000>;
+		qcom,vdd-mx-vmax = <1337500>;
 		qcom,vdd-mx-vmin-method = <1>;
 
 		qcom,cpr-ref-clk = <19200>;
