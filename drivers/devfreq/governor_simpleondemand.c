@@ -12,53 +12,51 @@
 #include <linux/errno.h>
 #include <linux/module.h>
 #include <linux/devfreq.h>
-#include <linux/math64.h>
 #include <linux/msm_adreno_devfreq.h>
 #include "governor.h"
 
 #define DEVFREQ_SIMPLE_ONDEMAND	"simple_ondemand"
 
+/*
+ * CEILING is 50msec, larger than any standard
+ * frame length.
+ */
+#define CEILING			50000
+
 /* Default constants for DevFreq-Simple-Ondemand (DFSO) */
-#define DFSO_UPTHRESHOLD	60
-#define DFSO_DOWNDIFFERENCTIAL	20
+#define DFSO_UPTHRESHOLD	20
+#define DFSO_DOWNDIFFERENCTIAL	10
 
-unsigned int dfso_upthreshold = DFSO_UPTHRESHOLD;
-unsigned int dfso_downdifferential = DFSO_DOWNDIFFERENCTIAL;
+static unsigned int dfso_upthreshold = DFSO_UPTHRESHOLD;
+static unsigned int dfso_downdifferential = DFSO_DOWNDIFFERENCTIAL;
 
+static unsigned int level = 0;
+static unsigned int load = 0;
+
+static inline int get_freq_num(struct devfreq *df) {
+
+	int num = 0; 
+	int i;
+
+	for (i = 0; df->profile->freq_table[i]; i++)
+		num++;
+
+	return num;
+}
 
 static int devfreq_simple_ondemand_func(struct devfreq *df,
 					unsigned long *freq,
 					u32 *flag)
 {
 	struct devfreq_dev_status stat;
-	struct devfreq_msm_adreno_tz_data *priv = df->data;
-	struct xstats xs;
-	int err;
-	unsigned long long a, b;
-	unsigned int dfso_upthreshold = DFSO_UPTHRESHOLD;
-	unsigned int dfso_downdifferential = DFSO_DOWNDIFFERENCTIAL;
-	struct devfreq_simple_ondemand_data *data = df->data;
+	int ret = 0;
 	unsigned long max = (df->max_freq) ? df->max_freq : UINT_MAX;
-	unsigned long min = (df->min_freq) ? df->min_freq : 0;
 
-	if (priv->bus.num)
-		stat.private_data = &xs;
-	else
-		stat.private_data = NULL;
+	stat.private_data = NULL;
 
-	err = df->profile->get_dev_status(df->dev.parent, &stat);
-	if (err)
-		return err;
-
-	if (data) {
-		if (data->upthreshold)
-			dfso_upthreshold = data->upthreshold;
-		if (data->downdifferential)
-			dfso_downdifferential = data->downdifferential;
-	}
-	if (dfso_upthreshold > 100 ||
-	    dfso_upthreshold < dfso_downdifferential)
-		return -EINVAL;
+	ret = df->profile->get_dev_status(df->dev.parent, &stat);
+	if (ret)
+		return ret;
 
 	/* Prevent overflow */
 	if (stat.busy_time >= (1 << 24) || stat.total_time >= (1 << 24)) {
@@ -66,46 +64,56 @@ static int devfreq_simple_ondemand_func(struct devfreq *df,
 		stat.total_time >>= 7;
 	}
 
-	/* Assume MAX if it is going to be divided by zero */
-	if (stat.total_time == 0) {
+	/*
+	 * If there is an extended block of busy processing,
+	 * increase frequency. Otherwise run the normal algorithm.
+	 */
+	if (stat.busy_time > CEILING) {
 		*freq = max;
-		return 0;
+		return ret;
 	}
 
-	/* Set MAX if it's busy enough */
-	if (stat.busy_time * 100 >
-	    stat.total_time * dfso_upthreshold) {
+	/*
+	 * Assume the max frequency if;
+	 * 1.) The total time is 0 (division by 0)
+	 * 2.) It's already really busy
+	 * 3.) The driver has no clue about the initial frequency
+	 *
+	 */
+	if (stat.total_time == 0
+		|| stat.busy_time * 100 >
+	    		stat.total_time * dfso_upthreshold
+		|| stat.current_frequency == 0) {
 		*freq = max;
-		return 0;
-	}
-
-	/* Set MAX if we do not know the initial frequency */
-	if (stat.current_frequency == 0) {
-		*freq = max;
-		return 0;
+		return ret;
 	}
 
 	/* Keep the current frequency */
 	if (stat.busy_time * 100 >
 	    stat.total_time * (dfso_upthreshold - dfso_downdifferential)) {
 		*freq = stat.current_frequency;
-		return 0;
+		return ret;
 	}
 
 	/* Set the desired frequency based on the load */
-	a = stat.busy_time;
-	a *= stat.current_frequency;
-	b = div_u64(a, stat.total_time);
-	b *= 100;
-	b = div_u64(b, (dfso_upthreshold - dfso_downdifferential / 2));
-	*freq = (unsigned long) b;
+	load = (100 * (unsigned int)stat.busy_time) /
+			(unsigned int)stat.total_time;
 
-	if (df->min_freq && *freq < df->min_freq)
-		*freq = df->min_freq;
-	if (df->max_freq && *freq > df->max_freq)
-		*freq = df->max_freq;
+	if (load >= dfso_upthreshold) {
+		if (level > 0)		
+			level--;		
+	} else if (load <= dfso_downdifferential) {
+		if (level < get_freq_num(df))		
+			level++;
+	} else {
+		/* If unsure about the frequency, stay at the current */
+		*freq = stat.current_frequency;
+		return ret;
+	}
 
-	return 0;
+	*freq = df->profile->freq_table[level];
+
+	return ret;
 }
 
 static ssize_t simple_ondemand_upthreshold_show(struct kobject *kobj,
