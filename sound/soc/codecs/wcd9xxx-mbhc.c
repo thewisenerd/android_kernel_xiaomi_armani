@@ -40,6 +40,11 @@
 #include "wcd9xxx-mbhc.h"
 #include "wcd9xxx-resmgr.h"
 #include "wcd9xxx-common.h"
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#include <linux/input/wake_helpers.h>
+int headset_plugged_in = 0;
+#endif
+
 
 #define WCD9XXX_JACK_MASK (SND_JACK_HEADSET | SND_JACK_OC_HPHL | \
 			   SND_JACK_OC_HPHR | SND_JACK_LINEOUT | \
@@ -2996,6 +3001,10 @@ static void wcd9xxx_swch_irq_handler(struct wcd9xxx_mbhc *mbhc)
 		}
 	}
 exit:
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	headset_plugged_in = (insert ? 1 : 0);
+	pr_info("%s: set wake_helper headset_plugged_in: %d\n", __func__, (insert ? 1 : 0));
+#endif
 	mbhc->in_swch_irq_handler = false;
 	WCD9XXX_BCL_UNLOCK(mbhc->resmgr);
 	pr_debug("%s: leave\n", __func__);

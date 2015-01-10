@@ -36,6 +36,15 @@
 #include <linux/earlysuspend.h>
 #endif
 
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
+#include <linux/input/sweep2wake.h>
+#endif
+#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+#include <linux/input/doubletap2wake.h>
+#endif
+#endif
+
 //register address
 #define FT5X0X_REG_DEVIDE_MODE	0x00
 #define FT5X0X_REG_ROW_ADDR		0x01
@@ -921,6 +930,28 @@ int ft5x06_suspend(struct ft5x06_data *ft5x06)
 {
 	int error = 0;
 
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	bool prevent_sleep = false;
+#endif
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE)
+	prevent_sleep = (s2w_switch > 0) && (s2w_s2sonly == 0);
+#endif
+#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
+#endif
+#endif
+
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	if (prevent_sleep) {
+		enable_irq_wake(ft5x06->irq);
+		mutex_lock(&ft5x06->mutex);
+		cancel_delayed_work_sync(&ft5x06->noise_filter_delayed_work);
+		error = ft5x06_write_byte(ft5x06,
+				FT5X0X_ID_G_PMODE, FT5X0X_POWER_MONITOR);
+		mutex_unlock(&ft5x06->mutex);
+	} else {
+#endif
 	disable_irq(ft5x06->irq);
 	mutex_lock(&ft5x06->mutex);
 	memset(ft5x06->tracker, 0, sizeof(ft5x06->tracker));
@@ -931,6 +962,9 @@ int ft5x06_suspend(struct ft5x06_data *ft5x06)
 			FT5X0X_ID_G_PMODE, FT5X0X_POWER_HIBERNATE);
 
 	mutex_unlock(&ft5x06->mutex);
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	} // if (prevent_sleep)
+#endif
 
 	return error;
 }
@@ -940,6 +974,28 @@ int ft5x06_resume(struct ft5x06_data *ft5x06)
 {
 	struct ft5x06_ts_platform_data *pdata = ft5x06->dev->platform_data;
 
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	bool prevent_sleep = false;
+#endif
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE)
+	prevent_sleep = (s2w_switch > 0) && (s2w_s2sonly == 0);
+#endif
+#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
+#endif
+#endif
+
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	if (prevent_sleep) {
+		disable_irq_wake(ft5x06->irq);
+		mutex_lock(&ft5x06->mutex);
+		cancel_delayed_work_sync(&ft5x06->noise_filter_delayed_work);
+		ft5x06_write_byte(ft5x06,
+			FT5X0X_ID_G_PMODE, FT5X0X_POWER_ACTIVE);
+		mutex_unlock(&ft5x06->mutex);
+	} else {
+#endif
 	mutex_lock(&ft5x06->mutex);
 
 	/* reset device */
@@ -953,6 +1009,9 @@ int ft5x06_resume(struct ft5x06_data *ft5x06)
 	ft5x06->in_suspend = false;
 	mutex_unlock(&ft5x06->mutex);
 	enable_irq(ft5x06->irq);
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	} // if (prevent_sleep)
+#endif
 
 	return 0;
 }
@@ -2099,7 +2158,11 @@ struct ft5x06_data *ft5x06_probe(struct device *dev,
 
 	/* start interrupt process */
 	error = request_threaded_irq(ft5x06->irq, NULL, ft5x06_interrupt,
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+				IRQF_TRIGGER_FALLING | IRQF_NO_SUSPEND, "ft5x06", ft5x06);
+#else
 				IRQF_TRIGGER_FALLING, "ft5x06", ft5x06);
+#endif
 	if (error) {
 		dev_err(dev, "fail to request interrupt\n");
 		goto err_free_phys;

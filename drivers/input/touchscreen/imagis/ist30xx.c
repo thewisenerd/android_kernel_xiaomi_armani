@@ -41,6 +41,15 @@
 #include "ist30xx_cmcs.h"
 #endif
 
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
+#include <linux/input/sweep2wake.h>
+#endif
+#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+#include <linux/input/doubletap2wake.h>
+#endif
+#endif
+
 #define MAX_ERR_CNT             (100)
 
 struct ist30xx_data *ts_data;
@@ -105,16 +114,53 @@ int ist30xx_intr_wait(struct ist30xx_data *data, long ms)
 
 void ist30xx_disable_irq(struct ist30xx_data *data)
 {
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	bool prevent_sleep = false;
+#endif
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE)
+	prevent_sleep = (s2w_switch > 0) && (s2w_s2sonly == 0);
+#endif
+#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
+#endif
+#endif
+
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	if (prevent_sleep) {
+		enable_irq_wake(data->client->irq);
+	} else {
+#endif
 	if (likely(data->irq_enabled)) {
 		ist30xx_tracking(data, TRACK_INTR_DISABLE);
 		disable_irq(data->client->irq);
 		data->irq_enabled = 0;
 		data->status.event_mode = false;
 	}
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	} //prevent_sleep
+#endif
 }
 
 void ist30xx_enable_irq(struct ist30xx_data *data)
 {
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	bool prevent_sleep = false;
+#endif
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE)
+	prevent_sleep = (s2w_switch > 0) && (s2w_s2sonly == 0);
+#endif
+#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
+#endif
+#endif
+
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	if (prevent_sleep) {
+		disable_irq_wake(data->client->irq);
+	} else {
+#endif
 	if (likely(!data->irq_enabled)) {
 		ist30xx_tracking(data, TRACK_INTR_ENABLE);
 		enable_irq(data->client->irq);
@@ -122,6 +168,9 @@ void ist30xx_enable_irq(struct ist30xx_data *data)
 		data->irq_enabled = 1;
 		data->status.event_mode = true;
 	}
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	}
+#endif
 }
 
 
@@ -890,11 +939,32 @@ static int ist30xx_input_disable(struct input_dev *in_dev)
 {
 	struct ist30xx_data *data = input_get_drvdata(in_dev);
 
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	bool prevent_sleep = false;
+#endif
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE)
+	prevent_sleep = (s2w_switch > 0) && (s2w_s2sonly == 0);
+#endif
+#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
+#endif
+#endif
+
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	if (prevent_sleep) {
+		enable_irq_wake(data->client->irq);
+	} else {
+#endif
+
 	mutex_lock(&data->ist30xx_mutex);
 	ist30xx_disable_irq(data);
 	ist30xx_internal_suspend(data);
 	clear_input_data(data);
 	mutex_unlock(&data->ist30xx_mutex);
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	} //prevent_sleep
+#endif
 
 	return 0;
 }
@@ -903,11 +973,31 @@ static int ist30xx_input_enable(struct input_dev *in_dev)
 {
 	struct ist30xx_data *data = input_get_drvdata(in_dev);
 
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	bool prevent_sleep = false;
+#endif
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE)
+	prevent_sleep = (s2w_switch > 0) && (s2w_s2sonly == 0);
+#endif
+#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
+#endif
+#endif
+
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	if (prevent_sleep) {
+		disable_irq_wake(data->client->irq);
+	} else {
+#endif
 	mutex_lock(&data->ist30xx_mutex);
 	ist30xx_internal_resume(data);
 	ist30xx_start(data);
 	ist30xx_enable_irq(data);
 	mutex_unlock(&data->ist30xx_mutex);
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	} //prevent_sleep
+#endif
 
 	return 0;
 }
@@ -1429,7 +1519,11 @@ static int __devinit ist30xx_probe(struct i2c_client *		client,
 	 * }*/
 
 	ret = request_threaded_irq(client->irq, NULL, ist30xx_irq_thread,
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+				   pdata->irqflags | IRQF_NO_SUSPEND, "ist30xx_ts", data);
+#else
 				   pdata->irqflags, "ist30xx_ts", data);
+#endif
 	if (unlikely(ret))
 		goto err_req_irq;
 
