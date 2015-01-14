@@ -27,6 +27,7 @@
 #include <linux/init.h>
 #include <linux/err.h>
 #include <linux/input/doubletap2wake.h>
+#include <linux/input/wake_helpers.h>
 #include <linux/slab.h>
 #include <linux/workqueue.h>
 #include <linux/input.h>
@@ -177,6 +178,13 @@ static void detect_doubletap2wake(int x, int y, bool st)
 }
 
 static void dt2w_input_callback(struct work_struct *unused) {
+	if (is_earpiece_on) {
+#if DT2W_DEBUG
+		pr_info("DoubleTap2Wake: earpiece on! return!\n");
+#endif
+		return;
+	}
+
 	detect_doubletap2wake(touch_x, touch_y, true);
 
 	return;

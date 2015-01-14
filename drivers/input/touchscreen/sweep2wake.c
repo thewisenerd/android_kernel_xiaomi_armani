@@ -27,6 +27,7 @@
 #include <linux/init.h>
 #include <linux/err.h>
 #include <linux/input/sweep2wake.h>
+#include <linux/input/wake_helpers.h>
 #include <linux/slab.h>
 #include <linux/workqueue.h>
 #include <linux/input.h>
@@ -228,6 +229,12 @@ static void detect_sweep2wake(int x, int y, bool st)
 }
 
 static void s2w_input_callback(struct work_struct *unused) {
+	if (is_earpiece_on) {
+#if S2W_DEBUG
+		pr_info("Sweep2Wake: earpiece on! return!\n");
+#endif
+		return;
+	}
 
 	detect_sweep2wake(touch_x, touch_y, true);
 
