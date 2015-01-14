@@ -56,6 +56,7 @@ MODULE_LICENSE("GPLv2");
 #define S2W_DEBUG		0
 #define S2W_DEFAULT		0
 #define S2W_S2SONLY_DEFAULT	0
+#define S2W_FULLSCREEN_DEFAULT	false
 #define S2W_PWRKEY_DUR          60
 
 #ifdef CONFIG_MACH_MSM8974_HAMMERHEAD
@@ -104,6 +105,7 @@ static int touch_x = 0, touch_y = 0;
 static bool touch_x_called = false, touch_y_called = false;
 static bool scr_suspended = false, exec_count = true;
 static bool scr_on_touch = false, barrier[2] = {false, false};
+static bool s2w_fullscreen = S2W_FULLSCREEN_DEFAULT;
 #ifndef CONFIG_HAS_EARLYSUSPEND
 static struct notifier_block s2w_lcd_notif;
 #endif
@@ -118,11 +120,18 @@ static int __init read_s2w_cmdline(char *s2w)
 	if (strcmp(s2w, "1") == 0) {
 		pr_info("[cmdline_s2w]: Sweep2Wake enabled. | s2w='%s'\n", s2w);
 		s2w_switch = 1;
+		s2w_fullscreen = false;
+	} else if (strcmp(s2w, "2") == 0) {
+		pr_info("[cmdline_s2w]: Sweep2Wake full screen enabled. | s2w='%s'\n", s2w);
+		s2w_switch = 2;
+		s2w_fullscreen = true;
 	} else if (strcmp(s2w, "0") == 0) {
 		pr_info("[cmdline_s2w]: Sweep2Wake disabled. | s2w='%s'\n", s2w);
 		s2w_switch = 0;
+		s2w_fullscreen = false;
 	} else {
 		pr_info("[cmdline_s2w]: No valid input found. Going with default: | s2w='%u'\n", s2w_switch);
+		s2w_fullscreen = S2W_FULLSCREEN_DEFAULT;
 	}
 	return 1;
 }
@@ -173,18 +182,18 @@ static void detect_sweep2wake(int x, int y, bool st)
 		if ((barrier[0] == true) ||
 		   ((x > prevx) &&
 		    (x < nextx) &&
-		    (y > S2W_Y_LIMIT))) {
+		    (y > (s2w_fullscreen ? 0 : S2W_Y_LIMIT)))) {
 			prevx = nextx;
 			nextx = S2W_X_B2;
 			barrier[0] = true;
 			if ((barrier[1] == true) ||
 			   ((x > prevx) &&
 			    (x < nextx) &&
-			    (y > S2W_Y_LIMIT))) {
+			    (y > (s2w_fullscreen ? 0 : S2W_Y_LIMIT)))) {
 				prevx = nextx;
 				barrier[1] = true;
 				if ((x > prevx) &&
-				    (y > S2W_Y_LIMIT)) {
+				    (y > (s2w_fullscreen ? 0 : S2W_Y_LIMIT))) {
 					if (x > (S2W_X_MAX - S2W_X_FINAL)) {
 						if (exec_count) {
 							pr_info(LOGTAG"ON\n");
@@ -385,9 +394,15 @@ static ssize_t s2w_sweep2wake_show(struct device *dev,
 static ssize_t s2w_sweep2wake_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	if (buf[0] >= '0' && buf[0] <= '1' && buf[1] == '\n')
-                if (s2w_switch != buf[0] - '0')
-		        s2w_switch = buf[0] - '0';
+	if (buf[0] >= '0' && buf[0] <= '2' && buf[1] == '\n')
+		if (s2w_switch != buf[0] - '0') {
+			s2w_switch = buf[0] - '0';
+			if ((s2w_switch == 1) || (s2w_switch == 0))
+				s2w_fullscreen = false;
+			else if (s2w_switch == 2)
+				s2w_fullscreen = true;
+
+		}
 
 	return count;
 }
