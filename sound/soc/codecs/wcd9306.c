@@ -38,6 +38,10 @@
 #include "wcd9306.h"
 #include "wcd9xxx-resmgr.h"
 #include "wcd9xxx-common.h"
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#include <linux/input/wake_helpers.h>
+int is_earpiece_on = 0;
+#endif
 
 #define TAPAN_HPH_PA_SETTLE_COMP_ON 3000
 #define TAPAN_HPH_PA_SETTLE_COMP_OFF 13000
@@ -4132,6 +4136,9 @@ static int tapan_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 						 WCD9XXX_CLSH_REQ_ENABLE,
 						 WCD9XXX_CLSH_EVENT_POST_PA);
 
+		is_earpiece_on = 1;
+		pr_info("%s: set wake_helper is_earpiece_on: %d\n", __func__, is_earpiece_on);
+
 		usleep_range(5000, 5010);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
@@ -4139,6 +4146,10 @@ static int tapan_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 						 WCD9XXX_CLSH_STATE_EAR,
 						 WCD9XXX_CLSH_REQ_DISABLE,
 						 WCD9XXX_CLSH_EVENT_POST_PA);
+
+		is_earpiece_on = 0;
+		pr_info("%s: set wake_helper is_earpiece_on: %d\n", __func__, is_earpiece_on);
+
 		usleep_range(5000, 5010);
 	}
 	return 0;
