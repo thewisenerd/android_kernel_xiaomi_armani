@@ -4148,7 +4148,6 @@ static int tapan_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
 		is_earpiece_on = 1;
-		pr_info("%s: set wake_helper is_earpiece_on: %d\n", __func__, is_earpiece_on);
 #endif
 
 		usleep_range(5000, 5010);
@@ -4161,11 +4160,14 @@ static int tapan_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
 		is_earpiece_on = 0;
-		pr_info("%s: set wake_helper is_earpiece_on: %d\n", __func__, is_earpiece_on);
 #endif
 
 		usleep_range(5000, 5010);
 	}
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	pr_info("%s: set wake_helper is_earpiece_on: %d\n", __func__, is_earpiece_on);
+#endif
+
 	return 0;
 }
 
