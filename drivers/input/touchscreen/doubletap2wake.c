@@ -174,12 +174,13 @@ static void detect_doubletap2wake(int x, int y, bool st)
 			new_touch(x, y);
 		}
 		if ((touch_nr > 1)) {
-			pr_info(LOGTAG"ON\n");
 			exec_count = false;
 			if ((dt2w_switch == 2) && (is_headset_in_use || dt2w_sent_play_pause)) {
+				pr_info(LOGTAG"MusicMod(e): play_pause\n");
 				key_code =  KEY_PLAYPAUSE;
 				dt2w_sent_play_pause = 1;
 			} else {
+				pr_info(LOGTAG"on_off\n");
 				key_code =  KEY_POWER;
 				dt2w_sent_play_pause = 0;
 			}

@@ -56,7 +56,6 @@ MODULE_LICENSE("GPLv2");
 #define S2W_DEBUG		0
 #define S2W_DEFAULT		0
 #define S2W_S2SONLY_DEFAULT	0
-#define S2W_FULLSCREEN_DEFAULT	false
 #define S2W_PWRKEY_DUR          60
 
 #ifdef CONFIG_MACH_MSM8974_HAMMERHEAD
@@ -105,7 +104,6 @@ static int touch_x = 0, touch_y = 0;
 static bool touch_x_called = false, touch_y_called = false;
 static bool scr_suspended = false, exec_count = true;
 static bool scr_on_touch = false, barrier[2] = {false, false};
-static bool s2w_fullscreen = S2W_FULLSCREEN_DEFAULT;
 static int key_code = KEY_POWER;
 static bool is_ltr = false;
 static bool is_ltr_set = false;
@@ -123,22 +121,17 @@ static int __init read_s2w_cmdline(char *s2w)
 	if (strcmp(s2w, "1") == 0) {
 		pr_info("[cmdline_s2w]: Sweep2Wake enabled. | s2w='%s'\n", s2w);
 		s2w_switch = 1;
-		s2w_fullscreen = false;
 	} else if (strcmp(s2w, "2") == 0) {
 		pr_info("[cmdline_s2w]: Sweep2Wake full screen enabled. | s2w='%s'\n", s2w);
 		s2w_switch = 2;
-		s2w_fullscreen = true;
 	} else if (strcmp(s2w, "3") == 0) {
 		pr_info("[cmdline_s2w]: Sweep2Wake MusicMod(e) enabled. | s2w='%s'\n", s2w);
 		s2w_switch = 3;
-		s2w_fullscreen = true;
 	} else if (strcmp(s2w, "0") == 0) {
 		pr_info("[cmdline_s2w]: Sweep2Wake disabled. | s2w='%s'\n", s2w);
 		s2w_switch = 0;
-		s2w_fullscreen = false;
 	} else {
 		pr_info("[cmdline_s2w]: No valid input found. Going with default: | s2w='%u'\n", s2w_switch);
-		s2w_fullscreen = S2W_FULLSCREEN_DEFAULT;
 	}
 	return 1;
 }
@@ -191,25 +184,28 @@ static void detect_sweep2wake(int x, int y, bool st)
 			if ((barrier[0] == true) ||
 				((x > prevx) &&
 				(x < nextx) &&
-				(y > ((s2w_fullscreen && ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 1)) ? 0 : S2W_Y_LIMIT)))) {
+				(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT)))) {
 				prevx = nextx;
 				nextx = S2W_X_B2;
 				barrier[0] = true;
 				if ((barrier[1] == true) ||
 					((x > prevx) &&
 					(x < nextx) &&
-					(y > ((s2w_fullscreen && ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 1)) ? 0 : S2W_Y_LIMIT)))) {
+					(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT)))) {
 					prevx = nextx;
 					barrier[1] = true;
 					if ((x > prevx) &&
-						(y > ((s2w_fullscreen && ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 1)) ? 0 : S2W_Y_LIMIT))) {
+						(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT))) {
 						if (x > (S2W_X_MAX - S2W_X_FINAL)) {
 							if (exec_count) {
-								pr_info(LOGTAG"ON\n");
-								if ((s2w_switch == 3) && (is_headset_in_use || dt2w_sent_play_pause))
+								if ((s2w_switch == 3) && (is_headset_in_use || dt2w_sent_play_pause)) {
+									pr_info(LOGTAG"LTR: MusicMod(e): next song\n");
 									key_code = KEY_NEXTSONG;
-								else
+								}
+								else {
+									pr_info(LOGTAG"LTR: ON\n");
 									key_code = KEY_POWER;
+								}
 								sweep2wake_pwrtrigger();
 								exec_count = false;
 							}
@@ -219,28 +215,27 @@ static void detect_sweep2wake(int x, int y, bool st)
 			}
 		//right->left (screen_off): handle MusiqMod(e)
 		} else {
-			pr_info(LOGTAG"RTL: MusicMod(e)\n");
 			prevx = S2W_X_MAX;
 			nextx = S2W_X_B2;
 			if ((barrier[0] == true) ||
 				((x < prevx) &&
 				(x > nextx) &&
-				(y > ((s2w_fullscreen && ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 1)) ? 0 : S2W_Y_LIMIT)))) {
+				(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT)))) {
 				prevx = nextx;
 				nextx = S2W_X_B1;
 				barrier[0] = true;
 				if ((barrier[1] == true) ||
 					((x < prevx) &&
 					(x > nextx) &&
-					(y > ((s2w_fullscreen && ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 1)) ? 0 : S2W_Y_LIMIT)))) {
+					(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT)))) {
 					prevx = nextx;
 					barrier[1] = true;
 					if ((x < prevx) &&
-						(y > ((s2w_fullscreen && ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 1)) ? 0 : S2W_Y_LIMIT))) {
+						(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT))) {
 						if (x < S2W_X_B1) {
 							if (exec_count) {
-								pr_info(LOGTAG"RTL: previous song\n");
 								if ((s2w_switch == 3) && (is_headset_in_use || dt2w_sent_play_pause)) {
+									pr_info(LOGTAG"RTL: MusicMod(e): previous song\n");
 									key_code = KEY_PREVIOUSSONG;
 									sweep2wake_pwrtrigger();
 								} else {
@@ -275,7 +270,7 @@ static void detect_sweep2wake(int x, int y, bool st)
 					(y > S2W_Y_LIMIT)) {
 					if (x < S2W_X_B1) {
 						if (exec_count) {
-							pr_info(LOGTAG"RTL: normal screen unlock\n");
+							pr_info(LOGTAG"RTL: OFF\n");
 							key_code = KEY_POWER;
 							sweep2wake_pwrtrigger();
 							exec_count = false;
@@ -449,14 +444,8 @@ static ssize_t s2w_sweep2wake_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
 	if (buf[0] >= '0' && buf[0] <= '3' && buf[1] == '\n')
-		if (s2w_switch != buf[0] - '0') {
+		if (s2w_switch != buf[0] - '0')
 			s2w_switch = buf[0] - '0';
-			if ((s2w_switch == 1) || (s2w_switch == 0))
-				s2w_fullscreen = false;
-			else if ((s2w_switch == 2) || (s2w_switch == 3))
-				s2w_fullscreen = true;
-
-		}
 
 	return count;
 }
