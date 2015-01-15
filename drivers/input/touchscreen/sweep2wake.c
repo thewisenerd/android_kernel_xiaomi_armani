@@ -106,6 +106,9 @@ static bool touch_x_called = false, touch_y_called = false;
 static bool scr_suspended = false, exec_count = true;
 static bool scr_on_touch = false, barrier[2] = {false, false};
 static bool s2w_fullscreen = S2W_FULLSCREEN_DEFAULT;
+static int key_code = KEY_POWER;
+static bool is_ltr = false;
+static bool is_ltr_set = false;
 #ifndef CONFIG_HAS_EARLYSUSPEND
 static struct notifier_block s2w_lcd_notif;
 #endif
@@ -125,6 +128,10 @@ static int __init read_s2w_cmdline(char *s2w)
 		pr_info("[cmdline_s2w]: Sweep2Wake full screen enabled. | s2w='%s'\n", s2w);
 		s2w_switch = 2;
 		s2w_fullscreen = true;
+	} else if (strcmp(s2w, "3") == 0) {
+		pr_info("[cmdline_s2w]: Sweep2Wake MusicMod(e) enabled. | s2w='%s'\n", s2w);
+		s2w_switch = 3;
+		s2w_fullscreen = true;
 	} else if (strcmp(s2w, "0") == 0) {
 		pr_info("[cmdline_s2w]: Sweep2Wake disabled. | s2w='%s'\n", s2w);
 		s2w_switch = 0;
@@ -141,10 +148,10 @@ __setup("s2w=", read_s2w_cmdline);
 static void sweep2wake_presspwr(struct work_struct * sweep2wake_presspwr_work) {
 	if (!mutex_trylock(&pwrkeyworklock))
                 return;
-	input_event(sweep2wake_pwrdev, EV_KEY, KEY_POWER, 1);
+	input_event(sweep2wake_pwrdev, EV_KEY, key_code, 1);
 	input_event(sweep2wake_pwrdev, EV_SYN, 0, 0);
 	msleep(S2W_PWRKEY_DUR);
-	input_event(sweep2wake_pwrdev, EV_KEY, KEY_POWER, 0);
+	input_event(sweep2wake_pwrdev, EV_KEY, key_code, 0);
 	input_event(sweep2wake_pwrdev, EV_SYN, 0, 0);
 	msleep(S2W_PWRKEY_DUR);
         mutex_unlock(&pwrkeyworklock);
@@ -164,69 +171,112 @@ static void sweep2wake_reset(void) {
 	barrier[0] = false;
 	barrier[1] = false;
 	scr_on_touch = false;
+	is_ltr_set = false;
 }
 
 /* Sweep2wake main function */
 static void detect_sweep2wake(int x, int y, bool st)
 {
-        int prevx = 0, nextx = 0;
-        bool single_touch = st;
+	int prevx = 0, nextx = 0;
+	bool single_touch = st;
 #if S2W_DEBUG
         pr_info(LOGTAG"x,y(%4d,%4d) single:%s\n",
                 x, y, (single_touch) ? "true" : "false");
 #endif
-	//left->right
-	if ((single_touch) && (scr_suspended == true) && (s2w_switch > 0 && !s2w_s2sonly)) {
-		prevx = 0;
-		nextx = S2W_X_B1;
-		if ((barrier[0] == true) ||
-		   ((x > prevx) &&
-		    (x < nextx) &&
-		    (y > (s2w_fullscreen ? 0 : S2W_Y_LIMIT)))) {
-			prevx = nextx;
-			nextx = S2W_X_B2;
-			barrier[0] = true;
-			if ((barrier[1] == true) ||
-			   ((x > prevx) &&
-			    (x < nextx) &&
-			    (y > (s2w_fullscreen ? 0 : S2W_Y_LIMIT)))) {
+	if ((single_touch) && (scr_suspended == true) && (s2w_switch > 0 && ((s2w_switch == 3) ? 1 : !s2w_s2sonly))) {
+		//left->right (screen_off)
+		if (is_ltr) {
+			prevx = 0;
+			nextx = S2W_X_B1;
+			if ((barrier[0] == true) ||
+				((x > prevx) &&
+				(x < nextx) &&
+				(y > ((s2w_fullscreen && ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 1)) ? 0 : S2W_Y_LIMIT)))) {
 				prevx = nextx;
-				barrier[1] = true;
-				if ((x > prevx) &&
-				    (y > (s2w_fullscreen ? 0 : S2W_Y_LIMIT))) {
-					if (x > (S2W_X_MAX - S2W_X_FINAL)) {
-						if (exec_count) {
-							pr_info(LOGTAG"ON\n");
-							sweep2wake_pwrtrigger();
-							exec_count = false;
+				nextx = S2W_X_B2;
+				barrier[0] = true;
+				if ((barrier[1] == true) ||
+					((x > prevx) &&
+					(x < nextx) &&
+					(y > ((s2w_fullscreen && ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 1)) ? 0 : S2W_Y_LIMIT)))) {
+					prevx = nextx;
+					barrier[1] = true;
+					if ((x > prevx) &&
+						(y > ((s2w_fullscreen && ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 1)) ? 0 : S2W_Y_LIMIT))) {
+						if (x > (S2W_X_MAX - S2W_X_FINAL)) {
+							if (exec_count) {
+								pr_info(LOGTAG"ON\n");
+								if ((s2w_switch == 3) && (is_headset_in_use || dt2w_sent_play_pause))
+									key_code = KEY_NEXTSONG;
+								else
+									key_code = KEY_POWER;
+								sweep2wake_pwrtrigger();
+								exec_count = false;
+							}
+						}
+					}
+				}
+			}
+		//right->left (screen_off): handle MusiqMod(e)
+		} else {
+			pr_info(LOGTAG"RTL: MusicMod(e)\n");
+			prevx = S2W_X_MAX;
+			nextx = S2W_X_B2;
+			if ((barrier[0] == true) ||
+				((x < prevx) &&
+				(x > nextx) &&
+				(y > ((s2w_fullscreen && ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 1)) ? 0 : S2W_Y_LIMIT)))) {
+				prevx = nextx;
+				nextx = S2W_X_B1;
+				barrier[0] = true;
+				if ((barrier[1] == true) ||
+					((x < prevx) &&
+					(x > nextx) &&
+					(y > ((s2w_fullscreen && ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 1)) ? 0 : S2W_Y_LIMIT)))) {
+					prevx = nextx;
+					barrier[1] = true;
+					if ((x < prevx) &&
+						(y > ((s2w_fullscreen && ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 1)) ? 0 : S2W_Y_LIMIT))) {
+						if (x < S2W_X_B1) {
+							if (exec_count) {
+								pr_info(LOGTAG"RTL: previous song\n");
+								if ((s2w_switch == 3) && (is_headset_in_use || dt2w_sent_play_pause)) {
+									key_code = KEY_PREVIOUSSONG;
+									sweep2wake_pwrtrigger();
+								} else {
+									key_code = KEY_POWER;
+								}
+								exec_count = false;
+							}
 						}
 					}
 				}
 			}
 		}
-	//right->left
+	//right->left (screen_on)
 	} else if ((single_touch) && (scr_suspended == false) && (s2w_switch > 0)) {
 		scr_on_touch=true;
 		prevx = S2W_X_MAX;
 		nextx = S2W_X_B2;
 		if ((barrier[0] == true) ||
-		   ((x < prevx) &&
-		    (x > nextx) &&
-		    (y > S2W_Y_LIMIT))) {
+			((x < prevx) &&
+			(x > nextx) &&
+			(y > S2W_Y_LIMIT))) {
 			prevx = nextx;
 			nextx = S2W_X_B1;
 			barrier[0] = true;
 			if ((barrier[1] == true) ||
-			   ((x < prevx) &&
-			    (x > nextx) &&
-			    (y > S2W_Y_LIMIT))) {
+				((x < prevx) &&
+				(x > nextx) &&
+				(y > S2W_Y_LIMIT))) {
 				prevx = nextx;
 				barrier[1] = true;
 				if ((x < prevx) &&
-				    (y > S2W_Y_LIMIT)) {
+					(y > S2W_Y_LIMIT)) {
 					if (x < S2W_X_B1) {
 						if (exec_count) {
-							pr_info(LOGTAG"OFF\n");
+							pr_info(LOGTAG"RTL: normal screen unlock\n");
+							key_code = KEY_POWER;
 							sweep2wake_pwrtrigger();
 							exec_count = false;
 						}
@@ -282,6 +332,10 @@ static void s2w_input_event(struct input_handle *handle, unsigned int type,
 	if (touch_x_called && touch_y_called) {
 		touch_x_called = false;
 		touch_y_called = false;
+		if (!is_ltr_set) {
+			is_ltr_set = true;
+			is_ltr = (touch_x > S2W_X_B2) ? false : true;
+		}
 		queue_work_on(0, s2w_input_wq, &s2w_input_work);
 	}
 }
@@ -394,12 +448,12 @@ static ssize_t s2w_sweep2wake_show(struct device *dev,
 static ssize_t s2w_sweep2wake_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	if (buf[0] >= '0' && buf[0] <= '2' && buf[1] == '\n')
+	if (buf[0] >= '0' && buf[0] <= '3' && buf[1] == '\n')
 		if (s2w_switch != buf[0] - '0') {
 			s2w_switch = buf[0] - '0';
 			if ((s2w_switch == 1) || (s2w_switch == 0))
 				s2w_fullscreen = false;
-			else if (s2w_switch == 2)
+			else if ((s2w_switch == 2) || (s2w_switch == 3))
 				s2w_fullscreen = true;
 
 		}
@@ -472,6 +526,8 @@ static int __init sweep2wake_init(void)
 	}
 
 	input_set_capability(sweep2wake_pwrdev, EV_KEY, KEY_POWER);
+	input_set_capability(sweep2wake_pwrdev, EV_KEY, KEY_NEXTSONG);
+	input_set_capability(sweep2wake_pwrdev, EV_KEY, KEY_PREVIOUSSONG);
 	sweep2wake_pwrdev->name = "s2w_pwrkey";
 	sweep2wake_pwrdev->phys = "s2w_pwrkey/input0";
 
