@@ -43,16 +43,14 @@ static struct thermal_info {
 };
 
 enum thermal_freqs {
-	FREQ_HELL		= 729600,
-	FREQ_VERY_HOT		= 1036800,
-	FREQ_HOT		= 1267200,
-	FREQ_WARM		= 1497600,
+	FREQ_VERY_HOT		= 787200,
+	FREQ_HOT		= 998400,
+	FREQ_WARM		= 1305600,
 };
 
 enum threshold_levels {
-	LEVEL_HELL		= 12,
-	LEVEL_VERY_HOT		= 9,
-	LEVEL_HOT		= 5,
+	LEVEL_VERY_HOT		= 8,
+	LEVEL_HOT		= 4,
 };
 
 static struct msm_thermal_data msm_thermal_info;
@@ -124,9 +122,7 @@ static void check_temp(struct work_struct *work)
 		}
 	}
 
-	if (temp >= temp_threshold + LEVEL_HELL)
-		freq = FREQ_HELL;
-	else if (temp >= temp_threshold + LEVEL_VERY_HOT)
+	if (temp >= temp_threshold + LEVEL_VERY_HOT)
 		freq = FREQ_VERY_HOT;
 	else if (temp >= temp_threshold + LEVEL_HOT)
 		freq = FREQ_HOT;
