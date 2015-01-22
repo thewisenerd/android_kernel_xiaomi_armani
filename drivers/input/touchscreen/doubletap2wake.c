@@ -89,7 +89,7 @@ static int __init read_dt2w_cmdline(char *dt2w)
 		pr_info("[cmdline_dt2w]: DoubleTap2Wake enabled. | dt2w='%s'\n", dt2w);
 		dt2w_switch = 1;
 	} else if (strcmp(dt2w, "2") == 0) {
-		pr_info("[cmdline_dt2w]: DoubleTap2Wake (MusicMod(e)) enabled. | dt2w='%s'\n", dt2w);
+		pr_info("[cmdline_dt2w]: DoubleTap2Wake (MusiqMod) enabled. | dt2w='%s'\n", dt2w);
 		dt2w_switch = 2;
 	} else if (strcmp(dt2w, "0") == 0) {
 		pr_info("[cmdline_dt2w]: DoubleTap2Wake disabled. | dt2w='%s'\n", dt2w);
@@ -176,7 +176,7 @@ static void detect_doubletap2wake(int x, int y, bool st)
 		if ((touch_nr > 1)) {
 			exec_count = false;
 			if ((dt2w_switch == 2) && (is_headset_in_use || dt2w_sent_play_pause)) {
-				pr_info(LOGTAG"MusicMod(e): play_pause\n");
+				pr_info(LOGTAG"MusiqMod: play_pause\n");
 				key_code =  KEY_PLAYPAUSE;
 				dt2w_sent_play_pause = 1;
 			} else {

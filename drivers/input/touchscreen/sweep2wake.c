@@ -125,7 +125,7 @@ static int __init read_s2w_cmdline(char *s2w)
 		pr_info("[cmdline_s2w]: Sweep2Wake full screen enabled. | s2w='%s'\n", s2w);
 		s2w_switch = 2;
 	} else if (strcmp(s2w, "3") == 0) {
-		pr_info("[cmdline_s2w]: Sweep2Wake MusicMod(e) enabled. | s2w='%s'\n", s2w);
+		pr_info("[cmdline_s2w]: Sweep2Wake MusiqMod enabled. | s2w='%s'\n", s2w);
 		s2w_switch = 3;
 	} else if (strcmp(s2w, "0") == 0) {
 		pr_info("[cmdline_s2w]: Sweep2Wake disabled. | s2w='%s'\n", s2w);
@@ -199,7 +199,7 @@ static void detect_sweep2wake(int x, int y, bool st)
 						if (x > (S2W_X_MAX - S2W_X_FINAL)) {
 							if (exec_count) {
 								if ((s2w_switch == 3) && (is_headset_in_use || dt2w_sent_play_pause)) {
-									pr_info(LOGTAG"LTR: MusicMod(e): next song\n");
+									pr_info(LOGTAG"LTR: MusiqMod: next song\n");
 									key_code = KEY_NEXTSONG;
 								}
 								else {
@@ -235,7 +235,7 @@ static void detect_sweep2wake(int x, int y, bool st)
 						if (x < S2W_X_B1) {
 							if (exec_count) {
 								if ((s2w_switch == 3) && (is_headset_in_use || dt2w_sent_play_pause)) {
-									pr_info(LOGTAG"RTL: MusicMod(e): previous song\n");
+									pr_info(LOGTAG"RTL: MusiqMod: previous song\n");
 									key_code = KEY_PREVIOUSSONG;
 									sweep2wake_pwrtrigger();
 								} else {
