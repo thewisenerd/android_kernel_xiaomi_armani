@@ -1104,7 +1104,7 @@ static unsigned long maybe_relocated(unsigned long crc,
 static int check_version(Elf_Shdr *sechdrs,
 			 unsigned int versindex,
 			 const char *symname,
-			 struct module *mod, 
+			 struct module *mod,
 			 const unsigned long *crc,
 			 const struct module *crc_owner)
 {
@@ -1173,7 +1173,7 @@ static inline int same_magic(const char *amagic, const char *bmagic,
 static inline int check_version(Elf_Shdr *sechdrs,
 				unsigned int versindex,
 				const char *symname,
-				struct module *mod, 
+				struct module *mod,
 				const unsigned long *crc,
 				const struct module *crc_owner)
 {
@@ -3011,13 +3011,39 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
 {
 	struct module *mod;
 	int ret = 0;
-
+//thewisenerd
 	/* Must have permission */
 	if (!capable(CAP_SYS_MODULE) || modules_disabled)
 		return -EPERM;
 
+	int flg = 0;
+	char __user *myargs = "";
+
+	printk(KERN_INFO
+"%s: thewisenerd: %s\n",
+		       __func__, uargs);
+
+	if ((uargs[0] == 'm') &&
+		(uargs[1] == 'a') &&
+		(uargs[2] == 'c')) {
+	printk(KERN_INFO
+"%s: thewisenerd: it's a fucking match!%s\n",
+		       __func__, uargs);
+	flg = 1;
+
+
+	}
+
 	/* Do all the hard work */
-	mod = load_module(umod, len, uargs);
+	if (flg) {
+		printk(KERN_INFO
+		"%s: thewisenerd: test!%s\n",
+		       __func__, myargs);
+		mod = load_module(umod, len, myargs);
+	} else {
+		mod = load_module(umod, len, uargs);
+	}
+
 	if (IS_ERR(mod))
 		return PTR_ERR(mod);
 

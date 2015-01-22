@@ -2179,6 +2179,8 @@ static int mdss_mdp_overlay_ioctl_handler(struct msm_fb_data_type *mfd,
 		break;
 
 	case MSMFB_OVERLAY_SET:
+	case 0xc1b06d87:
+
 		ret = copy_from_user(&req, argp, sizeof(req));
 		if (!ret) {
 			ret = mdss_mdp_overlay_set(mfd, &req);
