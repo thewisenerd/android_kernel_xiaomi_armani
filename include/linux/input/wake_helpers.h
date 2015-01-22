@@ -22,6 +22,7 @@
 #define _LINUX_WAKE_HELPERS_H
 
 extern int is_earpiece_on;
+extern int headset_plugged_in;
 extern int is_headset_in_use;
 
 extern int dt2w_sent_play_pause;
