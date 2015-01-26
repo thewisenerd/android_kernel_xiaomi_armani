@@ -52,7 +52,7 @@ static struct delayed_work intelli_plug_boost;
 static struct workqueue_struct *intelliplug_wq;
 static struct workqueue_struct *intelliplug_boost_wq;
 
-static unsigned int intelli_plug_active = 0;
+static unsigned int intelli_plug_active = 1;
 module_param(intelli_plug_active, uint, 0644);
 
 static unsigned int touch_boost_active = 1;
@@ -380,7 +380,7 @@ static void intelli_plug_suspend(struct early_suspend *handler)
 {
 	if (intelli_plug_active) {
 		int cpu;
-	
+
 		flush_workqueue(intelliplug_wq);
 
 		mutex_lock(&intelli_plug_mutex);
