@@ -79,8 +79,16 @@ obj-$(CONFIG_TOUCHSCREEN_TPS6507X)	+= tps6507x-ts.o
 obj-$(CONFIG_TOUCHSCREEN_MSM_LEGACY)		+= msm_touch.o
 obj-$(CONFIG_TOUCHSCREEN_CY8C_TS)	+= cy8c_ts.o
 obj-$(CONFIG_TOUCHSCREEN_CYTTSP_I2C_QC)       += cyttsp-i2c-qc.o
+<<<<<<< HEAD
 obj-$(CONFIG_TOUCHSCREEN_FT5X06)	+= ft5x06_ts.o
+=======
+obj-$(CONFIG_TOUCHSCREEN_FT5X06)        += ft5x06_ts.o
+obj-$(CONFIG_TOUCHSCREEN_FT5X06_I2C)    += ft5x06_ts_i2c.o
+obj-$(CONFIG_TOUCHSCREEN_FT5X06_SPI)    += ft5x06_ts_spi.o
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4)		+= synaptics_i2c_rmi4.o
+>>>>>>> c9908ca... LNX.LA.3.5.1-10110-8x26.0 -> Xiaomi Redmi 1S
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV)	+= synaptics_rmi_dev.o
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE) 	+= synaptics_fw_update.o
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4)		+= synaptics_i2c_rmi4.o
 obj-$(CONFIG_TOUCHSCREEN_GT9XX)		+= gt9xx/
+obj-$(CONFIG_TOUCHSCREEN_IST30XX)	+= imagis/

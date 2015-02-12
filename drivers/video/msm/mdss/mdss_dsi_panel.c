@@ -1120,6 +1120,8 @@ static int mdss_panel_parse_dt(struct device_node *np,
 	for (i = 0; i < len; i++)
 		pinfo->mipi.dsi_phy_db.timing[i] = data[i];
 
+	pinfo->mipi.force_clk_lane_hs = of_property_read_bool(np,
+					"qcom,mdss-dsi-force-clk-lane-hs");
 	pinfo->mipi.lp11_init = of_property_read_bool(np,
 					"qcom,mdss-dsi-lp11-init");
 	rc = of_property_read_u32(np, "qcom,mdss-dsi-init-delay-us", &tmp);

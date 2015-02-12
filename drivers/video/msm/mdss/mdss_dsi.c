@@ -742,6 +742,7 @@ static int mdss_dsi_unblank(struct mdss_panel_data *pdata)
 	int ret = 0;
 	struct mipi_panel_info *mipi;
 	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
+	static int exec_count = 0;
 
 	pr_debug("%s+:\n", __func__);
 
@@ -770,6 +771,18 @@ static int mdss_dsi_unblank(struct mdss_panel_data *pdata)
 		if (mipi->vsync_enable && mipi->hw_vsync_mode
 			&& gpio_is_valid(ctrl_pdata->disp_te_gpio)) {
 				mdss_dsi_set_tear_on(ctrl_pdata);
+		}
+	}
+	
+	if (pdata->panel_info.cont_splash_enabled && (exec_count == 0)) {
+		exec_count = 1;
+	} else {
+		if (mipi->force_clk_lane_hs) {
+			u32 tmp;
+			tmp = MIPI_INP((ctrl_pdata->ctrl_base) + 0xac);
+			tmp &= ~(1<<28);
+			MIPI_OUTP((ctrl_pdata->ctrl_base) + 0xac, tmp);
+			wmb();
 		}
 	}
 
