@@ -945,6 +945,11 @@ int ft5x06_suspend(struct ft5x06_data *ft5x06)
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
 	if (prevent_sleep) {
 		enable_irq_wake(ft5x06->irq);
+		mutex_lock(&ft5x06->mutex);
+		cancel_delayed_work_sync(&ft5x06->noise_filter_delayed_work);
+		error = ft5x06_write_byte(ft5x06,
+				FT5X0X_ID_G_PMODE, FT5X0X_POWER_MONITOR);
+		mutex_unlock(&ft5x06->mutex);
 	} else {
 #endif
 	disable_irq(ft5x06->irq);
@@ -984,6 +989,11 @@ int ft5x06_resume(struct ft5x06_data *ft5x06)
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
 	if (prevent_sleep) {
 		disable_irq_wake(ft5x06->irq);
+		mutex_lock(&ft5x06->mutex);
+		cancel_delayed_work_sync(&ft5x06->noise_filter_delayed_work);
+		ft5x06_write_byte(ft5x06,
+			FT5X0X_ID_G_PMODE, FT5X0X_POWER_ACTIVE);
+		mutex_unlock(&ft5x06->mutex);
 	} else {
 #endif
 	mutex_lock(&ft5x06->mutex);
