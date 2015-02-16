@@ -198,7 +198,7 @@ static void detect_sweep2wake(int x, int y, bool st)
 						(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT))) {
 						if (x > (S2W_X_MAX - S2W_X_FINAL)) {
 							if (exec_count) {
-								if ((s2w_switch == 3) && (is_headset_in_use || dt2w_sent_play_pause)) {
+								if ((s2w_switch == 3) && (is_headset_in_use || dt2w_sent_play_pause) && (y < S2W_Y_LIMIT)) {
 									pr_info(LOGTAG"LTR: MusiqMod: next song\n");
 									key_code = KEY_NEXTSONG;
 								}
@@ -234,7 +234,7 @@ static void detect_sweep2wake(int x, int y, bool st)
 						(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT))) {
 						if (x < S2W_X_B1) {
 							if (exec_count) {
-								if ((s2w_switch == 3) && (is_headset_in_use || dt2w_sent_play_pause)) {
+								if ((s2w_switch == 3) && (is_headset_in_use || dt2w_sent_play_pause) && (y < S2W_Y_LIMIT)) {
 									pr_info(LOGTAG"RTL: MusiqMod: previous song\n");
 									key_code = KEY_PREVIOUSSONG;
 									sweep2wake_pwrtrigger();
