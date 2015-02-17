@@ -85,10 +85,13 @@ MODULE_LICENSE("GPLv2");
 /* Xiaomi Redmi 1S 2014 */
 #define S2W_Y_MAX               1350
 #define S2W_X_MAX               720
-#define S2W_Y_LIMIT             1180
+#define S2W_Y_LIMIT             1280
 #define S2W_X_B1                155
 #define S2W_X_B2                355
 #define S2W_X_FINAL             175
+#define S2W_KEY_LEFT            160
+#define S2W_KEY_CENTER          360
+#define S2W_KEY_RIGHT           570
 #else
 /* defaults */
 #define S2W_Y_LIMIT             2350
@@ -101,6 +104,8 @@ MODULE_LICENSE("GPLv2");
 /* Resources */
 int s2w_switch = S2W_DEFAULT, s2w_s2sonly = S2W_S2SONLY_DEFAULT;
 static int touch_x = 0, touch_y = 0;
+static int x_pre = 0;
+int s2w_keypad_swipe_length = 3;
 static bool touch_x_called = false, touch_y_called = false;
 static bool scr_suspended = false, exec_count = true;
 static bool scr_on_touch = false, barrier[2] = {false, false};
@@ -164,7 +169,13 @@ static void sweep2wake_reset(void) {
 	barrier[0] = false;
 	barrier[1] = false;
 	scr_on_touch = false;
+	is_ltr = false;
 	is_ltr_set = false;
+	x_pre = 0;
+	touch_x = touch_y = 0;
+#if S2W_DEBUG
+	pr_info(LOGTAG"sweep2wake_reset called!\n");
+#endif
 }
 
 /* Sweep2wake main function */
@@ -173,9 +184,50 @@ static void detect_sweep2wake(int x, int y, bool st)
 	int prevx = 0, nextx = 0;
 	bool single_touch = st;
 #if S2W_DEBUG
-        pr_info(LOGTAG"x,y(%4d,%4d) single:%s\n",
-                x, y, (single_touch) ? "true" : "false");
+	pr_info(LOGTAG"x: %4d,x_pre: %4d\n",
+			x, x_pre);
 #endif
+	if (x_pre) {
+		if (s2w_keypad_swipe_length == 2) {
+			if (x == S2W_KEY_CENTER) {
+				if (x_pre == S2W_KEY_LEFT) {
+					if (scr_suspended) {
+#if S2W_DEBUG
+						pr_info(LOGTAG"LTR: keypad: ON\n");
+#endif
+						sweep2wake_pwrtrigger();
+					}
+				} else if (x_pre == S2W_KEY_RIGHT) {
+					if (!scr_suspended) {
+#if S2W_DEBUG
+						pr_info(LOGTAG"RTL: keypad: OFF\n");
+#endif
+						sweep2wake_pwrtrigger();
+					}
+				}
+			}
+		} else if (s2w_keypad_swipe_length == 3) {
+			if (x_pre == S2W_KEY_CENTER) {
+				if (x == S2W_KEY_LEFT) {
+					if (!scr_suspended) {
+#if S2W_DEBUG
+						pr_info(LOGTAG"RTL: keypad: OFF\n");
+#endif
+						sweep2wake_pwrtrigger();
+					}
+				} else if (x == S2W_KEY_RIGHT) {
+					if (scr_suspended) {
+#if S2W_DEBUG
+						pr_info(LOGTAG"LTR: keypad: ON\n");
+#endif
+						sweep2wake_pwrtrigger();
+					}
+				}
+			}
+		}
+		return;
+	}
+
 	if ((single_touch) && (scr_suspended == true) && (s2w_switch > 0 && ((s2w_switch == 3) ? 1 : !s2w_s2sonly))) {
 		//left->right (screen_off)
 		if (is_ltr) {
@@ -310,21 +362,60 @@ static void s2w_input_event(struct input_handle *handle, unsigned int type,
 	}
 
 	if (code == ABS_MT_TRACKING_ID && value == -1) {
-		sweep2wake_reset();
+		if (x_pre == 0) {
+			sweep2wake_reset();
+		}
 		return;
 	}
 
 	if (code == ABS_MT_POSITION_X) {
+		if ((value == S2W_KEY_LEFT) || (value == S2W_KEY_CENTER) || (value == S2W_KEY_RIGHT)) {
+			if (x_pre == 0) {
+				if ((value == S2W_KEY_LEFT) || (value == S2W_KEY_RIGHT)) {
+					if (scr_suspended) {
+						if (value == S2W_KEY_LEFT) {
+							x_pre = value;
+						}
+					} else {
+						if (value == S2W_KEY_RIGHT) {
+							x_pre = value;
+						}
+					}
+				}
+			} else {
+				if (s2w_keypad_swipe_length == 3) {
+					if (value == S2W_KEY_CENTER)
+						x_pre = value;
+
+					if (x_pre == S2W_KEY_CENTER) {
+						if (touch_x == S2W_KEY_LEFT)
+							if (value == S2W_KEY_RIGHT)
+								if (scr_suspended)
+									sweep2wake_reset();
+
+						if (touch_x == S2W_KEY_RIGHT)
+							if (value == S2W_KEY_LEFT)
+								if (!scr_suspended)
+									sweep2wake_reset();
+					}
+				}
+			}
+		}
 		touch_x = value;
 		touch_x_called = true;
 	}
 
 	if (code == ABS_MT_POSITION_Y) {
 		touch_y = value;
+		if (x_pre) {
+			if (value < S2W_Y_LIMIT) {
+				x_pre = 0;
+			}
+		}
 		touch_y_called = true;
 	}
 
-	if (touch_x_called && touch_y_called) {
+	if (touch_x_called && (x_pre ? true : (touch_y_called ? true : false))) {
 		touch_x_called = false;
 		touch_y_called = false;
 		if (!is_ltr_set) {
@@ -404,9 +495,11 @@ static int lcd_notifier_callback(struct notifier_block *this,
 	switch (event) {
 	case LCD_EVENT_ON_END:
 		scr_suspended = false;
+		sweep2wake_reset();
 		break;
 	case LCD_EVENT_OFF_END:
 		scr_suspended = true;
+		sweep2wake_reset();
 		break;
 	default:
 		break;
@@ -455,6 +548,29 @@ static ssize_t s2w_sweep2wake_dump(struct device *dev,
 
 static DEVICE_ATTR(sweep2wake, (S_IWUSR|S_IRUGO),
 	s2w_sweep2wake_show, s2w_sweep2wake_dump);
+
+static ssize_t s2w_sweep2wake_distance_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	size_t count = 0;
+
+	count += sprintf(buf, "%d\n", s2w_keypad_swipe_length);
+
+	return count;
+}
+
+static ssize_t s2w_sweep2wake_distance_dump(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	if (buf[0] >= '1' && buf[0] <= '4' && buf[1] == '\n')
+		if (s2w_keypad_swipe_length != buf[0] - '0')
+			s2w_keypad_swipe_length = buf[0] - '0';
+
+	return count;
+}
+
+static DEVICE_ATTR(sweep2wake_distance, (S_IWUSR|S_IRUGO),
+	s2w_sweep2wake_distance_show, s2w_sweep2wake_distance_dump);
 
 static ssize_t s2w_s2w_s2sonly_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -561,6 +677,10 @@ static int __init sweep2wake_init(void)
 	rc = sysfs_create_file(android_touch_kobj, &dev_attr_s2w_s2sonly.attr);
 	if (rc) {
 		pr_warn("%s: sysfs_create_file failed for s2w_s2sonly\n", __func__);
+	}
+	rc = sysfs_create_file(android_touch_kobj, &dev_attr_sweep2wake_distance.attr);
+	if (rc) {
+		pr_warn("%s: sysfs_create_file failed for sweep2wake_distance\n", __func__);
 	}
 	rc = sysfs_create_file(android_touch_kobj, &dev_attr_sweep2wake_version.attr);
 	if (rc) {
