@@ -44,7 +44,7 @@
 /* Version, author, desc, etc */
 #define DRIVER_AUTHOR "Dennis Rassmann <showp1984@gmail.com>"
 #define DRIVER_DESCRIPTION "Sweep2wake for almost any device"
-#define DRIVER_VERSION "1.5"
+#define DRIVER_VERSION "1.5.7"
 #define LOGTAG "[sweep2wake]: "
 
 MODULE_AUTHOR(DRIVER_AUTHOR);
