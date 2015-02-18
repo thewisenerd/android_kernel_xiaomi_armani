@@ -173,6 +173,7 @@ static void sweep2wake_reset(void) {
 	is_ltr_set = false;
 	x_pre = 0;
 	touch_x = touch_y = 0;
+	key_code = KEY_POWER;
 #if S2W_DEBUG
 	pr_info(LOGTAG"sweep2wake_reset called!\n");
 #endif
