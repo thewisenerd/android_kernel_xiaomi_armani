@@ -53,53 +53,53 @@ MODULE_VERSION(DRIVER_VERSION);
 MODULE_LICENSE("GPLv2");
 
 /* Tuneables */
-#define S2W_DEBUG		0
-#define S2W_DEFAULT		0
-#define S2W_S2SONLY_DEFAULT	0
-#define S2W_PWRKEY_DUR          60
-#define S2W_FEATHER		200
+#define S2W_DEBUG				0
+#define S2W_DEFAULT				0
+#define S2W_S2SONLY_DEFAULT		0
+#define S2W_PWRKEY_DUR			60
+#define S2W_FEATHER				200
 
 #ifdef CONFIG_MACH_MSM8974_HAMMERHEAD
 /* Hammerhead aka Nexus 5 */
-#define S2W_Y_MAX               1920
-#define S2W_X_MAX               1080
-#define S2W_Y_LIMIT             S2W_Y_MAX-130
-#define S2W_X_B1                400
-#define S2W_X_B2                700
-#define S2W_X_FINAL             250
+#define S2W_Y_MAX				1920
+#define S2W_X_MAX				1080
+#define S2W_Y_LIMIT				S2W_Y_MAX-130
+#define S2W_X_B1				400
+#define S2W_X_B2				700
+#define S2W_X_FINAL				250
 #elif defined(CONFIG_MACH_APQ8064_MAKO)
 /* Mako aka Nexus 4 */
-#define S2W_Y_LIMIT             2350
-#define S2W_X_MAX               1540
-#define S2W_X_B1                500
-#define S2W_X_B2                1000
-#define S2W_X_FINAL             300
+#define S2W_Y_LIMIT				2350
+#define S2W_X_MAX				1540
+#define S2W_X_B1				500
+#define S2W_X_B2				1000
+#define S2W_X_FINAL				300
 #elif defined(CONFIG_MACH_APQ8064_FLO)
 /* Flo/Deb aka Nexus 7 2013 */
-#define S2W_Y_MAX               2240
-#define S2W_X_MAX               1344
-#define S2W_Y_LIMIT             S2W_Y_MAX-110
-#define S2W_X_B1                500
-#define S2W_X_B2                700
-#define S2W_X_FINAL             450
+#define S2W_Y_MAX				2240
+#define S2W_X_MAX				1344
+#define S2W_Y_LIMIT				S2W_Y_MAX-110
+#define S2W_X_B1				500
+#define S2W_X_B2				700
+#define S2W_X_FINAL				450
 #elif defined(CONFIG_ARCH_MSM8226)
 /* Xiaomi Redmi 1S 2014 */
-#define S2W_Y_MAX               1350
-#define S2W_X_MAX               720
-#define S2W_Y_LIMIT             1280
-#define S2W_X_B1                155
-#define S2W_X_B2                355
-#define S2W_X_FINAL             175
-#define S2W_KEY_LEFT            160
-#define S2W_KEY_CENTER          360
-#define S2W_KEY_RIGHT           570
+#define S2W_Y_MAX				1350
+#define S2W_X_MAX				720
+#define S2W_Y_LIMIT				1280
+#define S2W_X_B1				155
+#define S2W_X_B2				355
+#define S2W_X_FINAL				175
+#define S2W_KEY_LEFT			160
+#define S2W_KEY_CENTER			360
+#define S2W_KEY_RIGHT			570
 #else
 /* defaults */
-#define S2W_Y_LIMIT             2350
-#define S2W_X_MAX               1540
-#define S2W_X_B1                500
-#define S2W_X_B2                1000
-#define S2W_X_FINAL             300
+#define S2W_Y_LIMIT				2350
+#define S2W_X_MAX				1540
+#define S2W_X_B1				500
+#define S2W_X_B2				1000
+#define S2W_X_FINAL				300
 #endif
 
 /* Resources */
@@ -147,14 +147,14 @@ __setup("s2w=", read_s2w_cmdline);
 /* PowerKey work func */
 static void sweep2wake_presspwr(struct work_struct * sweep2wake_presspwr_work) {
 	if (!mutex_trylock(&pwrkeyworklock))
-                return;
+		return;
 	input_event(sweep2wake_pwrdev, EV_KEY, key_code, 1);
 	input_event(sweep2wake_pwrdev, EV_SYN, 0, 0);
 	msleep(S2W_PWRKEY_DUR);
 	input_event(sweep2wake_pwrdev, EV_KEY, key_code, 0);
 	input_event(sweep2wake_pwrdev, EV_SYN, 0, 0);
 	msleep(S2W_PWRKEY_DUR);
-        mutex_unlock(&pwrkeyworklock);
+	mutex_unlock(&pwrkeyworklock);
 	return;
 }
 static DECLARE_WORK(sweep2wake_presspwr_work, sweep2wake_presspwr);
@@ -162,7 +162,7 @@ static DECLARE_WORK(sweep2wake_presspwr_work, sweep2wake_presspwr);
 /* PowerKey trigger */
 static void sweep2wake_pwrtrigger(void) {
 	schedule_work(&sweep2wake_presspwr_work);
-        return;
+	return;
 }
 
 /* reset on finger release */
@@ -598,8 +598,8 @@ static ssize_t s2w_s2w_s2sonly_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
 	if (buf[0] >= '0' && buf[0] <= '1' && buf[1] == '\n')
-                if (s2w_s2sonly != buf[0] - '0')
-		        s2w_s2sonly = buf[0] - '0';
+		if (s2w_s2sonly != buf[0] - '0')
+			s2w_s2sonly = buf[0] - '0';
 
 	return count;
 }
