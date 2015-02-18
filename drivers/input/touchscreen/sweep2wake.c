@@ -57,6 +57,7 @@ MODULE_LICENSE("GPLv2");
 #define S2W_DEFAULT		0
 #define S2W_S2SONLY_DEFAULT	0
 #define S2W_PWRKEY_DUR          60
+#define S2W_FEATHER		200
 
 #ifdef CONFIG_MACH_MSM8974_HAMMERHEAD
 /* Hammerhead aka Nexus 5 */
@@ -105,6 +106,7 @@ MODULE_LICENSE("GPLv2");
 int s2w_switch = S2W_DEFAULT, s2w_s2sonly = S2W_S2SONLY_DEFAULT;
 static int touch_x = 0, touch_y = 0;
 static int x_pre = 0;
+static int y_init = 0;
 int s2w_keypad_swipe_length = 3;
 static bool touch_x_called = false, touch_y_called = false;
 static bool scr_suspended = false, exec_count = true;
@@ -172,6 +174,7 @@ static void sweep2wake_reset(void) {
 	is_ltr = false;
 	is_ltr_set = false;
 	x_pre = 0;
+	y_init = 0;
 	touch_x = touch_y = 0;
 	key_code = KEY_POWER;
 #if S2W_DEBUG
@@ -407,6 +410,14 @@ static void s2w_input_event(struct input_handle *handle, unsigned int type,
 	}
 
 	if (code == ABS_MT_POSITION_Y) {
+		if (!y_init) {
+			y_init = value;
+		} else {
+			if (abs(value - y_init) > S2W_FEATHER) {
+				pr_info(LOGTAG"y crossed S2W_FEATHER val of %i\n", S2W_FEATHER);
+				sweep2wake_reset();
+			}
+		}
 		touch_y = value;
 		if (x_pre) {
 			if (value < S2W_Y_LIMIT) {
