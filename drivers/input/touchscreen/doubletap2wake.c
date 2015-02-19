@@ -59,12 +59,21 @@ MODULE_VERSION(DRIVER_VERSION);
 MODULE_LICENSE("GPLv2");
 
 /* Tuneables */
-#define DT2W_DEBUG		0
-#define DT2W_DEFAULT		0
+#define DT2W_DEBUG				0
+#define DT2W_DEFAULT			0
 
-#define DT2W_PWRKEY_DUR		60
-#define DT2W_FEATHER		200
-#define DT2W_TIME		700
+#define DT2W_PWRKEY_DUR			60
+#define DT2W_FEATHER			200
+#define DT2W_TIME				700
+
+#define DT2W_X_MAX				720
+#define DT2W_Y_LIMIT			1280
+
+#define DT2W_Y_B1				300
+#define DT2W_Y_B2				DT2W_Y_LIMIT-300
+
+#define DT2W_X_B1				200
+#define DT2W_X_B2				DT2W_X_MAX-200
 
 /* Resources */
 int dt2w_switch = DT2W_DEFAULT;
@@ -176,15 +185,32 @@ static void detect_doubletap2wake(int x, int y, bool st)
 		if ((touch_nr > 1)) {
 			exec_count = false;
 			if ((dt2w_switch == 2) && (is_headset_in_use || dt2w_sent_play_pause)) {
-				pr_info(LOGTAG"MusiqMod: play_pause\n");
-				key_code =  KEY_PLAYPAUSE;
-				dt2w_sent_play_pause = 1;
+				if ((y > DT2W_Y_B1) && (y < DT2W_Y_B2)) {
+					if ((x > DT2W_X_B1) && (x < DT2W_X_B2)) {
+						pr_info(LOGTAG"MusiqMod: play_pause\n");
+						key_code =  KEY_PLAYPAUSE;
+						dt2w_sent_play_pause = 1;
+						doubletap2wake_pwrtrigger();
+					} else if (x < DT2W_X_B1) {
+						pr_info(LOGTAG"MusiqMod: previous song\n");
+						key_code =  KEY_PREVIOUSSONG;
+						dt2w_sent_play_pause = 1;
+						doubletap2wake_pwrtrigger();
+					} else if (x > DT2W_X_B2) {
+						pr_info(LOGTAG"MusiqMod: next song\n");
+						key_code =  KEY_NEXTSONG;
+						dt2w_sent_play_pause = 1;
+						doubletap2wake_pwrtrigger();
+					}
+				} else {
+					doubletap2wake_reset();
+				}
 			} else {
 				pr_info(LOGTAG"on_off\n");
 				key_code =  KEY_POWER;
 				dt2w_sent_play_pause = 0;
+				doubletap2wake_pwrtrigger();
 			}
-			doubletap2wake_pwrtrigger();
 			doubletap2wake_reset();
 		}
 	}
@@ -406,6 +432,8 @@ static int __init doubletap2wake_init(void)
 
 	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_POWER);
 	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_PLAYPAUSE);
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_NEXTSONG);
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_PREVIOUSSONG);
 	doubletap2wake_pwrdev->name = "dt2w_pwrkey";
 	doubletap2wake_pwrdev->phys = "dt2w_pwrkey/input0";
 
