@@ -86,10 +86,17 @@ MODULE_LICENSE("GPLv2");
 /* Xiaomi Redmi 1S 2014 */
 #define S2W_Y_MAX				1350
 #define S2W_X_MAX				720
+#ifdef CONFIG_TOUCHSCREEN_EXP_KEYPAD_SWEEP2WAKE
 #define S2W_Y_LIMIT				1280
+#else
+#define S2W_Y_LIMIT				1180
+#endif
 #define S2W_X_B1				155
 #define S2W_X_B2				355
 #define S2W_X_FINAL				175
+#ifdef CONFIG_TOUCHSCREEN_EXP_KEYPAD_SWEEP2WAKE
+#define EXP_KEYPAD_S2W
+#endif
 #define S2W_KEY_LEFT			160
 #define S2W_KEY_CENTER			360
 #define S2W_KEY_RIGHT			570
@@ -107,9 +114,11 @@ MODULE_LICENSE("GPLv2");
 /* Resources */
 int s2w_switch = S2W_DEFAULT, s2w_s2sonly = S2W_S2SONLY_DEFAULT;
 static int touch_x = 0, touch_y = 0;
-static int x_pre = 0;
 static int y_init = 0;
+#ifdef EXP_KEYPAD_S2W
+static int x_pre = 0;
 int s2w_keypad_swipe_length = 3;
+#endif
 static bool touch_x_called = false, touch_y_called = false;
 static bool scr_suspended = false, exec_count = true;
 static bool scr_on_touch = false, barrier[2] = {false, false};
@@ -175,7 +184,9 @@ static void sweep2wake_reset(void) {
 	scr_on_touch = false;
 	is_ltr = false;
 	is_ltr_set = false;
+#ifdef EXP_KEYPAD_S2W
 	x_pre = 0;
+#endif
 	y_init = 0;
 	touch_x = touch_y = 0;
 	key_code = KEY_POWER;
@@ -193,6 +204,7 @@ static void detect_sweep2wake(int x, int y, bool st)
 	pr_info(LOGTAG"x: %4d,x_pre: %4d\n",
 			x, x_pre);
 #endif
+#ifdef EXP_KEYPAD_S2W
 	if (x_pre) {
 		if (s2w_keypad_swipe_length == 2) {
 			if (x == S2W_KEY_CENTER) {
@@ -233,6 +245,7 @@ static void detect_sweep2wake(int x, int y, bool st)
 		}
 		return;
 	}
+#endif // EXP_KEYPAD_S2W
 
 	if ((single_touch) && (scr_suspended == true) && (s2w_switch > 0 && ((s2w_switch == 3) ? 1 : !s2w_s2sonly))) {
 		//left->right (screen_off)
@@ -385,13 +398,15 @@ static void s2w_input_event(struct input_handle *handle, unsigned int type,
 	}
 
 	if (code == ABS_MT_TRACKING_ID && value == -1) {
-		if (x_pre == 0) {
+#ifdef EXP_KEYPAD_S2W
+		if (x_pre == 0)
+#endif
 			sweep2wake_reset();
-		}
 		return;
 	}
 
 	if (code == ABS_MT_POSITION_X) {
+#ifdef EXP_KEYPAD_S2W
 		if ((value == S2W_KEY_LEFT) || (value == S2W_KEY_CENTER) || (value == S2W_KEY_RIGHT)) {
 			if (x_pre == 0) {
 				if ((value == S2W_KEY_LEFT) || (value == S2W_KEY_RIGHT)) {
@@ -424,6 +439,7 @@ static void s2w_input_event(struct input_handle *handle, unsigned int type,
 				}
 			}
 		}
+#endif // EXP_KEYPAD_S2W
 		touch_x = value;
 		touch_x_called = true;
 	}
@@ -438,15 +454,22 @@ static void s2w_input_event(struct input_handle *handle, unsigned int type,
 			}
 		}
 		touch_y = value;
+#ifdef EXP_KEYPAD_S2W
 		if (x_pre) {
 			if (value < S2W_Y_LIMIT) {
 				x_pre = 0;
 			}
 		}
+#endif
 		touch_y_called = true;
 	}
 
+
+#ifdef EXP_KEYPAD_S2W
 	if (touch_x_called && (x_pre ? true : (touch_y_called ? true : false))) {
+#else
+	if (touch_x_called && touch_y_called) {
+#endif // EXP_KEYPAD_S2W
 		touch_x_called = false;
 		touch_y_called = false;
 		if (!is_ltr_set) {
@@ -580,6 +603,7 @@ static ssize_t s2w_sweep2wake_dump(struct device *dev,
 static DEVICE_ATTR(sweep2wake, (S_IWUSR|S_IRUGO),
 	s2w_sweep2wake_show, s2w_sweep2wake_dump);
 
+#ifdef EXP_KEYPAD_S2W
 static ssize_t s2w_sweep2wake_distance_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -602,6 +626,7 @@ static ssize_t s2w_sweep2wake_distance_dump(struct device *dev,
 
 static DEVICE_ATTR(sweep2wake_distance, (S_IWUSR|S_IRUGO),
 	s2w_sweep2wake_distance_show, s2w_sweep2wake_distance_dump);
+#endif // EXP_KEYPAD_S2W
 
 static ssize_t s2w_s2w_s2sonly_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -711,10 +736,12 @@ static int __init sweep2wake_init(void)
 	if (rc) {
 		pr_warn("%s: sysfs_create_file failed for s2w_s2sonly\n", __func__);
 	}
+#ifdef EXP_KEYPAD_S2W
 	rc = sysfs_create_file(android_touch_kobj, &dev_attr_sweep2wake_distance.attr);
 	if (rc) {
 		pr_warn("%s: sysfs_create_file failed for sweep2wake_distance\n", __func__);
 	}
+#endif // EXP_KEYPAD_S2W
 	rc = sysfs_create_file(android_touch_kobj, &dev_attr_sweep2wake_version.attr);
 	if (rc) {
 		pr_warn("%s: sysfs_create_file failed for sweep2wake_version\n", __func__);

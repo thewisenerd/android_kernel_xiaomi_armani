@@ -951,6 +951,11 @@ config TOUCHSCREEN_SWEEP2WAKE
 	select TOUCHSCREEN_PREVENT_SLEEP
 	default n
 
+config TOUCHSCREEN_EXP_KEYPAD_SWEEP2WAKE
+	bool "Experimental Sweep2Wake for ft5x06 touch panel (armani)"
+	depends on TOUCHSCREEN_SWEEP2WAKE && TOUCHSCREEN_FT5X06
+	default n
+
 config TOUCHSCREEN_DOUBLETAP2WAKE
 	tristate "DoubleTap2Wake for touchscreens"
 	select TOUCHSCREEN_PREVENT_SLEEP
