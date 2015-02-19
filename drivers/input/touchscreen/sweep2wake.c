@@ -93,6 +93,8 @@ MODULE_LICENSE("GPLv2");
 #define S2W_KEY_LEFT			160
 #define S2W_KEY_CENTER			360
 #define S2W_KEY_RIGHT			570
+#define S2W_Y_B1				300
+#define S2W_Y_B2				S2W_Y_LIMIT-300
 #else
 /* defaults */
 #define S2W_Y_LIMIT				2350
@@ -255,14 +257,22 @@ static void detect_sweep2wake(int x, int y, bool st)
 						if (x > (S2W_X_MAX - S2W_X_FINAL)) {
 							if (exec_count) {
 								if ((s2w_switch == 3) && (is_headset_in_use || dt2w_sent_play_pause) && (y < S2W_Y_LIMIT)) {
-									pr_info(LOGTAG"LTR: MusiqMod: next song\n");
-									key_code = KEY_NEXTSONG;
-								}
-								else {
+									if (y <= S2W_Y_B1) {
+										pr_info(LOGTAG"LTR: MusiqMod: volume up!\n");
+										key_code = KEY_VOLUMEUP;
+										sweep2wake_pwrtrigger();
+									} else if (y >= S2W_Y_B2) {
+										pr_info(LOGTAG"LTR: MusiqMod: next song\n");
+										key_code = KEY_NEXTSONG;
+										sweep2wake_pwrtrigger();
+									} else {
+										sweep2wake_reset();
+									}
+								} else {
 									pr_info(LOGTAG"LTR: ON\n");
 									key_code = KEY_POWER;
+									sweep2wake_pwrtrigger();
 								}
-								sweep2wake_pwrtrigger();
 								exec_count = false;
 							}
 						}
@@ -291,9 +301,18 @@ static void detect_sweep2wake(int x, int y, bool st)
 						if (x < S2W_X_B1) {
 							if (exec_count) {
 								if ((s2w_switch == 3) && (is_headset_in_use || dt2w_sent_play_pause) && (y < S2W_Y_LIMIT)) {
-									pr_info(LOGTAG"RTL: MusiqMod: previous song\n");
-									key_code = KEY_PREVIOUSSONG;
-									sweep2wake_pwrtrigger();
+									pr_info(LOGTAG"LTR: MusiqMod: y = %i, S2W_Y_B2 = %i!\n", y, S2W_Y_B2);
+									if (y <= S2W_Y_B1) {
+										pr_info(LOGTAG"LTR: MusiqMod: volume down!\n");
+										key_code = KEY_VOLUMEDOWN;
+										sweep2wake_pwrtrigger();
+									} else if (y >= S2W_Y_B2) {
+										pr_info(LOGTAG"RTL: MusiqMod: previous song\n");
+										key_code = KEY_PREVIOUSSONG;
+										sweep2wake_pwrtrigger();
+									} else {
+										sweep2wake_reset();
+									}
 								} else {
 									key_code = KEY_POWER;
 								}
@@ -648,6 +667,8 @@ static int __init sweep2wake_init(void)
 	input_set_capability(sweep2wake_pwrdev, EV_KEY, KEY_POWER);
 	input_set_capability(sweep2wake_pwrdev, EV_KEY, KEY_NEXTSONG);
 	input_set_capability(sweep2wake_pwrdev, EV_KEY, KEY_PREVIOUSSONG);
+	input_set_capability(sweep2wake_pwrdev, EV_KEY, KEY_VOLUMEDOWN);
+	input_set_capability(sweep2wake_pwrdev, EV_KEY, KEY_VOLUMEUP);
 	sweep2wake_pwrdev->name = "s2w_pwrkey";
 	sweep2wake_pwrdev->phys = "s2w_pwrkey/input0";
 
