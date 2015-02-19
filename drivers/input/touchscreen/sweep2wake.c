@@ -255,21 +255,21 @@ static void detect_sweep2wake(int x, int y, bool st)
 			if ((barrier[0] == true) ||
 				((x > prevx) &&
 				(x < nextx) &&
-				(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT)))) {
+				(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use() || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT)))) {
 				prevx = nextx;
 				nextx = S2W_X_B2;
 				barrier[0] = true;
 				if ((barrier[1] == true) ||
 					((x > prevx) &&
 					(x < nextx) &&
-					(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT)))) {
+					(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use() || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT)))) {
 					prevx = nextx;
 					barrier[1] = true;
 					if ((x > prevx) &&
-						(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT))) {
+						(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use() || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT))) {
 						if (x > (S2W_X_MAX - S2W_X_FINAL)) {
 							if (exec_count) {
-								if ((s2w_switch == 3) && (is_headset_in_use || dt2w_sent_play_pause) && (y < S2W_Y_LIMIT)) {
+								if ((s2w_switch == 3) && (is_headset_in_use() || dt2w_sent_play_pause) && (y < S2W_Y_LIMIT)) {
 									if (y <= S2W_Y_B1) {
 										pr_info(LOGTAG"LTR: MusiqMod: volume up!\n");
 										key_code = KEY_VOLUMEUP;
@@ -299,21 +299,21 @@ static void detect_sweep2wake(int x, int y, bool st)
 			if ((barrier[0] == true) ||
 				((x < prevx) &&
 				(x > nextx) &&
-				(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT)))) {
+				(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use() || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT)))) {
 				prevx = nextx;
 				nextx = S2W_X_B1;
 				barrier[0] = true;
 				if ((barrier[1] == true) ||
 					((x < prevx) &&
 					(x > nextx) &&
-					(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT)))) {
+					(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use() || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT)))) {
 					prevx = nextx;
 					barrier[1] = true;
 					if ((x < prevx) &&
-						(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT))) {
+						(y > (((s2w_switch == 2) || ((s2w_switch == 3) ? (is_headset_in_use() || dt2w_sent_play_pause) : 0)) ? 0 : S2W_Y_LIMIT))) {
 						if (x < S2W_X_B1) {
 							if (exec_count) {
-								if ((s2w_switch == 3) && (is_headset_in_use || dt2w_sent_play_pause) && (y < S2W_Y_LIMIT)) {
+								if ((s2w_switch == 3) && (is_headset_in_use() || dt2w_sent_play_pause) && (y < S2W_Y_LIMIT)) {
 									pr_info(LOGTAG"LTR: MusiqMod: y = %i, S2W_Y_B2 = %i!\n", y, S2W_Y_B2);
 									if (y <= S2W_Y_B1) {
 										pr_info(LOGTAG"LTR: MusiqMod: volume down!\n");

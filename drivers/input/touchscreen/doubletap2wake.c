@@ -184,7 +184,7 @@ static void detect_doubletap2wake(int x, int y, bool st)
 		}
 		if ((touch_nr > 1)) {
 			exec_count = false;
-			if ((dt2w_switch == 2) && (is_headset_in_use || dt2w_sent_play_pause)) {
+			if ((dt2w_switch == 2) && (is_headset_in_use() || dt2w_sent_play_pause)) {
 				if ((y > DT2W_Y_B1) && (y < DT2W_Y_B2)) {
 					if ((x > DT2W_X_B1) && (x < DT2W_X_B2)) {
 						pr_info(LOGTAG"MusiqMod: play_pause\n");

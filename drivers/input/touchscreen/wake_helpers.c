@@ -1,5 +1,6 @@
 /*
- * include/linux/input/wake_helpers.h
+ * drivers/input/touchscreen/wake_helpers.c
+ *
  *
  * Copyright (c) 2015, Vineeth Raj <contact.twn@openmailbox.org>
  *
@@ -18,15 +19,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _LINUX_WAKE_HELPERS_H
-#define _LINUX_WAKE_HELPERS_H
+#include <linux/input/wake_helpers.h>
 
-extern int is_earpiece_on;
-extern int headset_plugged_in;
-extern int var_is_headset_in_use;
-
-int is_headset_in_use(void);
-
-extern int dt2w_sent_play_pause;
-
-#endif  /* _LINUX_WAKE_HELPERS_H */
+int is_headset_in_use(void) {
+	return var_is_headset_in_use;
+}
