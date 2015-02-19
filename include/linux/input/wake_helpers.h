@@ -21,9 +21,14 @@
 #ifndef _LINUX_WAKE_HELPERS_H
 #define _LINUX_WAKE_HELPERS_H
 
+#include <stdbool.h>
+
 extern int is_earpiece_on;
 extern int headset_plugged_in;
 extern int var_is_headset_in_use;
+
+extern bool s2w_scr_suspended;
+extern bool dt2w_scr_suspended;
 
 int is_headset_in_use(void);
 
