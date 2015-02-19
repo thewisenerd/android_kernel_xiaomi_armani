@@ -226,7 +226,7 @@ static void detect_doubletap2wake(int x, int y, bool st)
 }
 
 static void dt2w_input_callback(struct work_struct *unused) {
-	if (is_earpiece_on) {
+	if (is_earpiece_on()) {
 #if DT2W_DEBUG
 		pr_info("DoubleTap2Wake: earpiece on! return!\n");
 #endif

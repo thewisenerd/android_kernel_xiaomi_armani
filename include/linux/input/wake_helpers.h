@@ -23,7 +23,7 @@
 
 #include <stdbool.h>
 
-extern int is_earpiece_on;
+extern int var_is_earpiece_on;
 extern int headset_plugged_in;
 extern int var_is_headset_in_use;
 
@@ -31,6 +31,7 @@ extern bool s2w_scr_suspended;
 extern bool dt2w_scr_suspended;
 
 int is_headset_in_use(void);
+int is_earpiece_on(void);
 
 extern int dt2w_sent_play_pause;
 

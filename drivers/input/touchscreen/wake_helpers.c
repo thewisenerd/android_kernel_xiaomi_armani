@@ -24,3 +24,7 @@
 int is_headset_in_use(void) {
 	return var_is_headset_in_use;
 }
+
+int is_earpiece_on(void) {
+	return var_is_earpiece_on;
+}
