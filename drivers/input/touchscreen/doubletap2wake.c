@@ -80,7 +80,8 @@ int dt2w_switch = DT2W_DEFAULT;
 static cputime64_t tap_time_pre = 0;
 static int touch_x = 0, touch_y = 0, touch_nr = 0, x_pre = 0, y_pre = 0;
 static bool touch_x_called = false, touch_y_called = false, touch_cnt = true;
-static bool scr_suspended = false, exec_count = true;
+static bool exec_count = true;
+bool dt2w_scr_suspended = false;
 static int key_code = KEY_POWER;
 int dt2w_sent_play_pause = 0;
 #ifndef CONFIG_HAS_EARLYSUSPEND
@@ -238,7 +239,7 @@ static void dt2w_input_event(struct input_handle *handle, unsigned int type,
 		(code==ABS_MT_TRACKING_ID) ? "ID" :
 		"undef"), code, value);
 #endif
-	if (!scr_suspended)
+	if (!dt2w_scr_suspended)
 		return;
 
 	if (code == ABS_MT_SLOT) {
@@ -336,11 +337,11 @@ static int lcd_notifier_callback(struct notifier_block *this,
 {
 	switch (event) {
 	case LCD_EVENT_ON_END:
-		scr_suspended = false;
+		dt2w_scr_suspended = false;
 		dt2w_sent_play_pause = 0;
 		break;
 	case LCD_EVENT_OFF_END:
-		scr_suspended = true;
+		dt2w_scr_suspended = true;
 		break;
 	default:
 		break;
@@ -350,11 +351,11 @@ static int lcd_notifier_callback(struct notifier_block *this,
 }
 #else
 static void dt2w_early_suspend(struct early_suspend *h) {
-	scr_suspended = true;
+	dt2w_scr_suspended = true;
 }
 
 static void dt2w_late_resume(struct early_suspend *h) {
-	scr_suspended = false;
+	dt2w_scr_suspended = false;
 }
 
 static struct early_suspend dt2w_early_suspend_handler = {
