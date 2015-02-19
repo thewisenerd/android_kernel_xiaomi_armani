@@ -72,8 +72,17 @@ MODULE_LICENSE("GPLv2");
 #define DT2W_FEATHER			200
 #define DT2W_TIME				700
 
+#if defined(CONFIG_ARCH_MSM8226)
 #define DT2W_X_MAX				720
 #define DT2W_Y_LIMIT			1280
+#elif defined(CONFIG_MACH_PICO)
+#define DT2W_X_MAX				1024
+#define DT2W_Y_LIMIT			910
+#else
+/* defaults */
+#define DT2W_X_MAX				1540
+#define DT2W_Y_LIMIT			2350
+#endif
 
 #define DT2W_Y_B1				300
 #define DT2W_Y_B2				DT2W_Y_LIMIT-300
@@ -281,6 +290,7 @@ static int input_dev_filter(struct input_dev *dev) {
 	if (strstr(dev->name, "ft5x06")
 		||strstr(dev->name, "ist30xx_ts")
 		||strstr(dev->name, "Goodix-CTP")
+		||strstr(dev->name, "himax-touchscreen")
 		) {
 		return 0;
 	} else {
