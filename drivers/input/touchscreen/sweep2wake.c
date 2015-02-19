@@ -108,6 +108,16 @@ MODULE_LICENSE("GPLv2");
 #define S2W_KEY_RIGHT			570
 #define S2W_Y_B1				300
 #define S2W_Y_B2				S2W_Y_LIMIT-300
+#elif defined(CONFIG_MACH_PICO)
+/* HTC Pico 2011 */
+#define S2W_Y_MAX				1050
+#define S2W_X_MAX				1024
+#define S2W_Y_LIMIT				910
+#define S2W_X_B1				256
+#define S2W_X_B2				512
+#define S2W_X_FINAL				768
+#define S2W_Y_B1				300
+#define S2W_Y_B2				S2W_Y_LIMIT-300
 #else
 /* defaults */
 #define S2W_Y_LIMIT				2350
@@ -493,6 +503,7 @@ static int input_dev_filter(struct input_dev *dev) {
 	if (strstr(dev->name, "ft5x06")
 		||strstr(dev->name, "ist30xx_ts")
 		||strstr(dev->name, "Goodix-CTP")
+		||strstr(dev->name, "himax-touchscreen")
 		) {
 		return 0;
 	} else {
