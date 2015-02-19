@@ -314,7 +314,7 @@ static void detect_sweep2wake(int x, int y, bool st)
 										sweep2wake_reset();
 									}
 								} else {
-									key_code = KEY_POWER;
+									sweep2wake_reset();
 								}
 								exec_count = false;
 							}
