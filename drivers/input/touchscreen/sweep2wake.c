@@ -390,9 +390,9 @@ static void detect_sweep2wake(int x, int y, bool st)
 }
 
 static void s2w_input_callback(struct work_struct *unused) {
-	if (is_earpiece_on()) {
+	if (in_phone_call()) {
 #if S2W_DEBUG
-		pr_info("Sweep2Wake: earpiece on! return!\n");
+		pr_info("Sweep2Wake: in phone call! return!\n");
 #endif
 		return;
 	}
