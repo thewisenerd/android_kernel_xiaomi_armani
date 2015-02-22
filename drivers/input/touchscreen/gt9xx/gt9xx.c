@@ -2159,6 +2159,11 @@ static int goodix_ts_resume(struct device *dev)
 {
 	struct goodix_ts_data *ts = dev_get_drvdata(dev);
 	int ret = 0;
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	bool prevent_sleep = false;
+#endif
+#endif // CONFIG_TOUCHSCREEN_PREVENT_SLEEP
 
 	if (!ts->gtp_is_suspend) {
 		dev_dbg(&ts->client->dev, "Already in awake state.\n");
@@ -2166,9 +2171,6 @@ static int goodix_ts_resume(struct device *dev)
 	}
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-	bool prevent_sleep = false;
-#endif
 #if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE)
 	prevent_sleep = (s2w_switch > 0) && (s2w_s2sonly == 0);
 #endif
