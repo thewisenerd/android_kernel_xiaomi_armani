@@ -23,7 +23,7 @@
 
 #include <stdbool.h>
 
-extern int var_is_earpiece_on;
+extern bool var_in_phone_call;
 extern int headset_plugged_in;
 extern int var_is_headset_in_use;
 

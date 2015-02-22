@@ -26,5 +26,5 @@ int is_headset_in_use(void) {
 }
 
 int is_earpiece_on(void) {
-	return var_is_earpiece_on;
+	return var_in_phone_call;
 }
