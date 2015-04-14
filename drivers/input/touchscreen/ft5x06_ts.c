@@ -992,6 +992,9 @@ int ft5x06_resume(struct ft5x06_data *ft5x06)
 	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
 #endif
 #ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+	//todo: add scr_suspended functions
+	// add prevent_sleep function
+	// sleep.
 	if (pwrkey_pressed)
 		prevent_sleep = false;
 #endif
