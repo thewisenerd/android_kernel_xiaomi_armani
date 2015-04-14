@@ -979,6 +979,14 @@ config TOUCHSCREEN_PREVENT_SLEEP
 	help
 	  This disables the sleep function of modified touchscreen drivers.
 
+config TOUCHSCREEN_PWRKEY_SUSPEND
+	tristate "Suspend touch screen for real if power button pressed"
+	default n
+	depends on TOUCHSCREEN_PREVENT_SLEEP
+	help
+	  This powers down the touch panel even though Sweep2Wake or DoubleTap2Wake
+	  may be enabled
+
 config TOUCHSCREEN_GEN_VKEYS
        tristate "Touchscreen Virtual Keys Driver"
        help

@@ -48,6 +48,9 @@
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
 #include <linux/input/doubletap2wake.h>
 #endif
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+#include <linux/qpnp/power-on.h>
+#endif
 #endif
 
 #define MAX_ERR_CNT             (100)
@@ -124,6 +127,10 @@ void ist30xx_disable_irq(struct ist30xx_data *data)
 #if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
 #endif
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+	if (pwrkey_pressed)
+		prevent_sleep = false;
+#endif
 #endif
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
@@ -153,6 +160,10 @@ void ist30xx_enable_irq(struct ist30xx_data *data)
 #endif
 #if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
+#endif
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+	if (pwrkey_pressed)
+		prevent_sleep = false;
 #endif
 #endif
 
@@ -949,6 +960,10 @@ static int ist30xx_input_disable(struct input_dev *in_dev)
 #if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
 #endif
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+	if (pwrkey_pressed)
+		prevent_sleep = false;
+#endif
 #endif
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
@@ -982,6 +997,10 @@ static int ist30xx_input_enable(struct input_dev *in_dev)
 #endif
 #if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
+#endif
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+	if (pwrkey_pressed)
+		prevent_sleep = false;
 #endif
 #endif
 

@@ -43,6 +43,9 @@
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
 #include <linux/input/doubletap2wake.h>
 #endif
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+#include <linux/qpnp/power-on.h>
+#endif
 #endif
 
 //register address
@@ -940,6 +943,10 @@ int ft5x06_suspend(struct ft5x06_data *ft5x06)
 #if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
 #endif
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+	if (pwrkey_pressed)
+		prevent_sleep = false;
+#endif
 #endif
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
@@ -983,6 +990,10 @@ int ft5x06_resume(struct ft5x06_data *ft5x06)
 #endif
 #if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
+#endif
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+	if (pwrkey_pressed)
+		prevent_sleep = false;
 #endif
 #endif
 

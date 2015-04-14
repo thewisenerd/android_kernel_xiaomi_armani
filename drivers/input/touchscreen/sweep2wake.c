@@ -32,6 +32,9 @@
 #include <linux/workqueue.h>
 #include <linux/input.h>
 #include <linux/hrtimer.h>
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+#include <linux/qpnp/power-on.h>
+#endif
 
 /* uncomment since no touchscreen defines android touch, do that here */
 //#define ANDROID_TOUCH_DECLARED
@@ -570,6 +573,9 @@ static int lcd_notifier_callback(struct notifier_block *this,
 	switch (event) {
 	case LCD_EVENT_ON_END:
 		s2w_scr_suspended = false;
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+		pwrkey_pressed = false;
+#endif
 		sweep2wake_reset();
 		break;
 	case LCD_EVENT_OFF_END:

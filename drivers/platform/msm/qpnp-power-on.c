@@ -91,6 +91,13 @@
 #define QPNP_KEY_STATUS_DELAY			msecs_to_jiffies(250)
 #define QPNP_PON_REV_B				0x01
 
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+bool pwrkey_pressed = false;
+bool pwrkey_suspend = false;
+static int cnt = 0;
+module_param(pwrkey_suspend, bool, 0755);
+#endif
+
 enum pon_type {
 	PON_KPDPWR,
 	PON_RESIN,
@@ -412,6 +419,17 @@ qpnp_pon_input_dispatch(struct qpnp_pon *pon, u32 pon_type)
 	default:
 		return -EINVAL;
 	}
+
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+	if (pwrkey_suspend) {
+		if (cfg->key_code == KEY_POWER && cnt == 0) {
+			pwrkey_pressed = true;
+			cnt++;
+		} else {
+			cnt = 0;
+		}
+	}
+#endif
 
 	input_report_key(pon->pon_input, cfg->key_code,
 					(pon_rt_sts & pon_rt_bit));

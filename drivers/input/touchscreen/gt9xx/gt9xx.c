@@ -59,6 +59,9 @@
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
 #include <linux/input/doubletap2wake.h>
 #endif
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+#include <linux/qpnp/power-on.h>
+#endif
 #endif
 
 #define GOODIX_DEV_NAME	"Goodix-CTP"
@@ -329,6 +332,10 @@ void gtp_irq_disable(struct goodix_ts_data *ts)
 #if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
 #endif
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+	if (pwrkey_pressed)
+		prevent_sleep = false;
+#endif
 #endif
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
@@ -369,6 +376,10 @@ void gtp_irq_enable(struct goodix_ts_data *ts)
 #endif
 #if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
+#endif
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+	if (pwrkey_pressed)
+		prevent_sleep = false;
 #endif
 #endif
 
@@ -2099,6 +2110,10 @@ static int goodix_ts_suspend(struct device *dev)
 #if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
 #endif
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+	if (pwrkey_pressed)
+		prevent_sleep = false;
+#endif
 #endif
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
@@ -2176,6 +2191,10 @@ static int goodix_ts_resume(struct device *dev)
 #endif
 #if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
+#endif
+#ifdef CONFIG_TOUCHSCREEN_PWRKEY_SUSPEND
+	if (pwrkey_pressed)
+		prevent_sleep = false;
 #endif
 #endif
 
