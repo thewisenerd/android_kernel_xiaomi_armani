@@ -1075,13 +1075,13 @@ void __init msm8226_init_gpiomux(void)
 	}
 	msm_gpiomux_install(msm_hsic_configs, ARRAY_SIZE(msm_hsic_configs));
 #endif
-<<<<<<< HEAD
+
 	if (machine_is_msm8926() && of_board_is_mtp())
 		msm_gpiomux_install(smsc_hub_configs,
 			ARRAY_SIZE(smsc_hub_configs));
-=======
-    msm_gpiomux_install(msm_haptic_configs, ARRAY_SIZE(msm_haptic_configs));
->>>>>>> c9908ca... LNX.LA.3.5.1-10110-8x26.0 -> Xiaomi Redmi 1S
+
+	msm_gpiomux_install(msm_haptic_configs, ARRAY_SIZE(msm_haptic_configs));
+
 }
 
 static void wcnss_switch_to_gpio(void)

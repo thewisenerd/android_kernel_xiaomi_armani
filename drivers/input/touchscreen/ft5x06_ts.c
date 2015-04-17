@@ -1,13 +1,5 @@
 /*
-<<<<<<< HEAD
- *
- * FocalTech ft5x06 TouchScreen driver.
- *
- * Copyright (c) 2010  Focal tech Ltd.
- * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
-=======
  * Copyright (C) 2011 XiaoMi, Inc.
->>>>>>> c9908ca... LNX.LA.3.5.1-10110-8x26.0 -> Xiaomi Redmi 1S
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -33,65 +25,6 @@
 #include <linux/debugfs.h>
 #include <linux/input.h>
 #include <linux/input/ft5x06_ts.h>
-<<<<<<< HEAD
-
-#if defined(CONFIG_FB)
-#include <linux/notifier.h>
-#include <linux/fb.h>
-
-#elif defined(CONFIG_HAS_EARLYSUSPEND)
-#include <linux/earlysuspend.h>
-/* Early-suspend level */
-#define FT_SUSPEND_LEVEL 1
-#endif
-
-#define FT_DRIVER_VERSION	0x02
-
-#define FT_META_REGS		3
-#define FT_ONE_TCH_LEN		6
-#define FT_TCH_LEN(x)		(FT_META_REGS + FT_ONE_TCH_LEN * x)
-
-#define FT_PRESS		0x7F
-#define FT_MAX_ID		0x0F
-#define FT_TOUCH_X_H_POS	3
-#define FT_TOUCH_X_L_POS	4
-#define FT_TOUCH_Y_H_POS	5
-#define FT_TOUCH_Y_L_POS	6
-#define FT_TD_STATUS		2
-#define FT_TOUCH_EVENT_POS	3
-#define FT_TOUCH_ID_POS		5
-#define FT_TOUCH_DOWN		0
-#define FT_TOUCH_CONTACT	2
-
-/*register address*/
-#define FT_REG_DEV_MODE		0x00
-#define FT_DEV_MODE_REG_CAL	0x02
-#define FT_REG_ID		0xA3
-#define FT_REG_PMODE		0xA5
-#define FT_REG_FW_VER		0xA6
-#define FT_REG_POINT_RATE	0x88
-#define FT_REG_THGROUP		0x80
-#define FT_REG_ECC		0xCC
-#define FT_REG_RESET_FW		0x07
-#define FT_REG_FW_MIN_VER	0xB2
-#define FT_REG_FW_SUB_MIN_VER	0xB3
-
-/* power register bits*/
-#define FT_PMODE_ACTIVE		0x00
-#define FT_PMODE_MONITOR	0x01
-#define FT_PMODE_STANDBY	0x02
-#define FT_PMODE_HIBERNATE	0x03
-#define FT_FACTORYMODE_VALUE	0x40
-#define FT_WORKMODE_VALUE	0x00
-#define FT_RST_CMD_REG1		0xFC
-#define FT_RST_CMD_REG2		0xBC
-#define FT_READ_ID_REG		0x90
-#define FT_ERASE_APP_REG	0x61
-#define FT_ERASE_PANEL_REG	0x63
-#define FT_FW_START_REG		0xBF
-
-#define FT_STATUS_NUM_TP_MASK	0x0F
-=======
 #include <linux/interrupt.h>
 #include <linux/module.h>
 #include <linux/slab.h>
@@ -160,7 +93,6 @@
 #define FT5X0X_MAX_PRESSURE		0xff
 
 #define NOISE_FILTER_DELAY	HZ
->>>>>>> c9908ca... LNX.LA.3.5.1-10110-8x26.0 -> Xiaomi Redmi 1S
 
 #define FT_VTG_MIN_UV		2600000
 #define FT_VTG_MAX_UV		3300000
@@ -291,31 +223,7 @@ static int ft5x06_read_block(struct ft5x06_data *ft5x06,
 
 static int ft5x06_read_byte(struct ft5x06_data *ft5x06, u8 addr, u8 *data)
 {
-<<<<<<< HEAD
-	struct i2c_client *client = data->client;
-	u8 reg_addr;
-	int err;
-
-	reg_addr = FT_REG_FW_VER;
-	err = ft5x06_i2c_read(client, &reg_addr, 1, &data->fw_ver[0], 1);
-	if (err < 0)
-		dev_err(&client->dev, "fw major version read failed");
-
-	reg_addr = FT_REG_FW_MIN_VER;
-	err = ft5x06_i2c_read(client, &reg_addr, 1, &data->fw_ver[1], 1);
-	if (err < 0)
-		dev_err(&client->dev, "fw minor version read failed");
-
-	reg_addr = FT_REG_FW_SUB_MIN_VER;
-	err = ft5x06_i2c_read(client, &reg_addr, 1, &data->fw_ver[2], 1);
-	if (err < 0)
-		dev_err(&client->dev, "fw sub minor version read failed");
-
-	dev_info(&client->dev, "Firmware version = %d.%d.%d\n",
-		data->fw_ver[0], data->fw_ver[1], data->fw_ver[2]);
-=======
 	return ft5x06_read_block(ft5x06, addr, data, sizeof(*data));
->>>>>>> c9908ca... LNX.LA.3.5.1-10110-8x26.0 -> Xiaomi Redmi 1S
 }
 
 static int ft5x06_write_byte(struct ft5x06_data *ft5x06, u8 addr, u8 data)
@@ -1084,24 +992,6 @@ static int ft5x06_input_enable(struct input_dev *in_dev)
 static ssize_t ft5x06_vkeys_show(struct kobject *kobj,
 				struct kobj_attribute *attr, char *buf)
 {
-<<<<<<< HEAD
-	struct ft5x06_ts_data *data = dev_get_drvdata(dev);
-	const struct firmware *fw = NULL;
-	int rc;
-	u8 fw_file_maj, fw_file_min, fw_file_sub_min;
-	bool fw_upgrade = false;
-
-	if (data->suspended) {
-		dev_info(dev, "Device is in suspend state: Exit FW upgrade\n");
-		return -EBUSY;
-	}
-
-	rc = request_firmware(&fw, data->fw_name, dev);
-	if (rc < 0) {
-		dev_err(dev, "Request firmware failed - %s (%d)\n",
-						data->fw_name, rc);
-		return rc;
-=======
 	struct ft5x06_data *ft5x06 =
 		container_of(attr, struct ft5x06_data, vkeys_attr);
 	struct ft5x06_ts_platform_data *pdata = ft5x06->dev->platform_data;
@@ -1112,7 +1002,6 @@ static ssize_t ft5x06_vkeys_show(struct kobject *kobj,
 		if (ft5x06->chip_id == pdata->keypad[i].chip) {
 			keypad = &pdata->keypad[i];
 		}
->>>>>>> c9908ca... LNX.LA.3.5.1-10110-8x26.0 -> Xiaomi Redmi 1S
 	}
 	for (i = 0; keypad && i < keypad->length; i++) {
 		int width  = keypad->button[i].width;
@@ -1170,18 +1059,11 @@ static ssize_t ft5x06_object_show(struct device *dev,
 	int i, error, count = 0;
 	u8 val;
 
-<<<<<<< HEAD
-	if (force)
-		fw_upgrade = true;
-	else if (data->fw_ver[0] < fw_file_maj)
-		fw_upgrade = true;
-=======
 	mutex_lock(&ft5x06->mutex);
 	for (i = 0; reg_list[i].addr != 0; i++) {
 		error = ft5x06_read_byte(ft5x06, reg_list[i].addr, &val);
 		if (error)
 			break;
->>>>>>> c9908ca... LNX.LA.3.5.1-10110-8x26.0 -> Xiaomi Redmi 1S
 
 		count += snprintf(buf+count, PAGE_SIZE-count,
 				reg_list[i].fmt, val);

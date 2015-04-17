@@ -18,9 +18,6 @@
 /include/ "dsi-panel-ssd2080m-720p-video.dtsi"
 /include/ "dsi-panel-auo-720p-video.dtsi"
 /include/ "dsi-panel-jdi-1080p-video.dtsi"
-<<<<<<< HEAD
 /include/ "dsi-panel-nt35590-qvga-cmd.dtsi"
-=======
 /include/ "dsi-panel-sharp-R69431-720p-video.dtsi"
 /include/ "dsi-panel-auo-nt35521-720p-video.dtsi"
->>>>>>> c9908ca... LNX.LA.3.5.1-10110-8x26.0 -> Xiaomi Redmi 1S
