@@ -1137,13 +1137,6 @@ static int __devinit msm_hotplug_probe(struct platform_device *pdev)
 		goto err_dev;
 	}
 
-	hotplug.notif.notifier_call = lcd_notifier_callback;
-        if (lcd_register_client(&hotplug.notif) != 0) {
-                pr_err("%s: Failed to register LCD notifier callback\n",
-                       MSM_HOTPLUG);
-		goto err_dev;
-	}
-
 	ret = input_register_handler(&hotplug_input_handler);
 	if (ret) {
 		pr_err("%s: Failed to register input handler: %d\n",
