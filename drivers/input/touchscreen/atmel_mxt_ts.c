@@ -4983,7 +4983,7 @@ static int mxt_input_enable(struct input_dev *in_dev)
 #endif
 #endif
 
-#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+#if defined(CONFIG_TOUCHSCREEN_PREVENT_SLEEP)
 	if (prevent_sleep)
 		disable_irq_wake(client->irq);
 	else
@@ -5007,7 +5007,7 @@ static int mxt_input_disable(struct input_dev *in_dev)
 #endif
 #endif
 
-#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+#if defined(CONFIG_TOUCHSCREEN_PREVENT_SLEEP)
 	if (prevent_sleep)
 		enable_irq_wake(client->irq);
 	else
