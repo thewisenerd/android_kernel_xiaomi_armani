@@ -27,6 +27,12 @@
 #include <linux/of_gpio.h>
 #include "fts_ts.h"
 
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+#include <linux/input/doubletap2wake.h>
+#endif
+#endif
+
 #define DRIVER_FTS		"fts_dummy"
 #define FTS_MAJOR		0x0A
 #define FTS_MINOR		0xF3
@@ -1337,7 +1343,16 @@ static int fts_input_enable(struct input_dev *in_dev)
 
 #ifdef CONFIG_PM
 	struct fts_data *fts = input_get_drvdata(in_dev);
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	bool prevent_sleep = false;
+#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	prevent_sleep = (dt2w_switch > 0);
+#endif
+#endif
 
+#if defined(CONFIG_TOUCHSCREEN_PREVENT_SLEEP)
+	if (!prevent_sleep)
+#endif
 	error = fts_resume(fts);
 	if (error)
 		dev_err(fts->dev, "%s: failed\n", __func__);
@@ -1353,6 +1368,16 @@ static int fts_input_disable(struct input_dev *in_dev)
 #ifdef CONFIG_PM
 	struct fts_data *fts = input_get_drvdata(in_dev);
 
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	bool prevent_sleep = false;
+#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	prevent_sleep = (dt2w_switch > 0);
+#endif
+#endif
+
+#if defined(CONFIG_TOUCHSCREEN_PREVENT_SLEEP)
+	if (!prevent_sleep)
+#endif
 	error = fts_suspend(fts);
 	if (error)
 		dev_err(fts->dev, "%s: failed\n", __func__);
