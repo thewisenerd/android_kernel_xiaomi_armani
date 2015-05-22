@@ -5693,7 +5693,12 @@ static int __devinit mxt_probe(struct i2c_client *client,
 		goto err_free_object;
 
 	error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+			pdata->irqflags | IRQF_NO_SUSPEND, client->dev.driver->name, data);
+#else
 			pdata->irqflags, client->dev.driver->name, data);
+#endif
+
 	if (error) {
 		dev_err(&client->dev, "Error %d registering irq\n", error);
 		goto err_free_input_device;

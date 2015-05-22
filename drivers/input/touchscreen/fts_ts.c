@@ -2258,7 +2258,11 @@ struct fts_data *fts_probe(struct device *dev,
 
 	/* start interrupt process */
 	error = request_threaded_irq(fts->irq, NULL, fts_interrupt,
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+				pdata->irqflags | IRQF_NO_SUSPEND, "fts", fts);
+#else
 				pdata->irqflags, "fts", fts);
+#endif
 	if (error) {
 		dev_err(dev, "fail to request interrupt\n");
 		goto err_unregister_input;
