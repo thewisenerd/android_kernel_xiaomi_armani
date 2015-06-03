@@ -357,6 +357,11 @@ struct mdss_mdp_pipe_smp_map {
 	DECLARE_BITMAP(fixed, MAX_DRV_SUP_MMB_BLKS);
 };
 
+struct mdss_mdp_shared_reg_ctrl {
+	u32 reg_off;
+	u32 bit_off;
+};
+
 struct mdss_mdp_pipe {
 	u32 num;
 	u32 type;
@@ -364,6 +369,9 @@ struct mdss_mdp_pipe {
 	char __iomem *base;
 	u32 ftch_id;
 	u32 xin_id;
+	struct mdss_mdp_shared_reg_ctrl clk_ctrl;
+	struct mdss_mdp_shared_reg_ctrl clk_status;
+
 	atomic_t ref_cnt;
 	u32 play_cnt;
 	int pid;
@@ -565,6 +573,7 @@ struct mdss_mdp_pipe *mdss_mdp_mixer_stage_pipe(struct mdss_mdp_ctl *ctl,
 						int mux, int stage);
 int mdss_mdp_mixer_pipe_update(struct mdss_mdp_pipe *pipe, int params_changed);
 int mdss_mdp_mixer_pipe_unstage(struct mdss_mdp_pipe *pipe);
+void mdss_mdp_mixer_unstage_all(struct mdss_mdp_mixer *mixer);
 int mdss_mdp_display_commit(struct mdss_mdp_ctl *ctl, void *arg);
 int mdss_mdp_display_wait4comp(struct mdss_mdp_ctl *ctl);
 int mdss_mdp_display_wait4pingpong(struct mdss_mdp_ctl *ctl);

@@ -21,10 +21,14 @@
 };
 
 &mdss_dsi0 {
-	qcom,dsi-pref-prim-pan = <&dsi_nt35590_720_vid>;
+	qcom,dsi-pref-prim-pan = <&dsi_auo_720_vid>;
 };
 
-&dsi_nt35590_720_vid {
+&dsi_auo_720_vid {
+	qcom,cont-splash-enabled;
+};
+
+&dsi_sharp_720_vid {
 	qcom,cont-splash-enabled;
 };
 
@@ -32,5 +36,49 @@
 	tapan_codec {
 		qcom,cdc-micbias1-ext-cap;
 		qcom,cdc-micbias3-ext-cap;
+	};
+};
+
+&master0 {
+	qcom,hw-thigh = <22>;
+};
+
+&soc {
+	w1-gpio {
+		compatible = "qcom,w1-gpio";
+		qcom,gpio-pin = <567>; /* BAT_ID Connects to mpp-8*/
+		qcom,is-open-drain = <0>;
+	};
+
+	usb_otg: usb@f9a55000 {
+		interrupts = <0 1 2>;
+		interrupt-names = "core_irq", "async_irq", "pmic_id_irq";
+
+		qcom,hsusb-otg-phy-init-seq =
+			<0x74 0x80 0x6C 0x81 0x34 0x82 0x13 0x83 0xffffffff>;
+		qcom,hsusb-otg-mode = <3>;
+
+		#address-cells = <0>;
+		interrupt-parent = <&usb_otg>;
+		#interrupt-cells = <1>;
+		interrupt-map-mask = <0xffffffff>;
+		interrupt-map = <0 &intc 0 134 0
+				1 &intc 0 140 0
+				2 &spmi_bus 0x0 0x0 0x9 0x0>;
+
+		vbus_otg-supply = <&pm8226_chg_otg>;
+	};
+};
+
+&pm8226_vadc {
+	chan@30 {
+		qcom,hw-settle-time = <0xF>;
+	};
+};
+
+&pm8226_adc_tm {
+	chan@30 {
+		qcom,hw-settle-time = <0xF>;
+		qcom,fast-avg-setup = <0>;
 	};
 };

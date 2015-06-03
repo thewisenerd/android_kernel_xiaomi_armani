@@ -101,6 +101,18 @@ enum dsi_lane_map_type {
 	DSI_LANE_MAP_3210,
 };
 
+enum {
+	DISPPARAM_CE_ON = 0x10,
+	DISPPARAM_CE_OFF = 0xF0,
+	DISPPARAM_COLOR_WARM = 0x01,
+	DISPPARAM_COLOR_NORMAL = 0x02,
+	DISPPARAM_COLOR_COLD = 0x03,
+	DISPPARAM_CABC_GUI = 0x100,
+	DISPPARAM_CABC_STILL = 0x200,
+	DISPPARAM_CABC_MOVIE = 0x300,
+	DISPPARAM_CABC_OFF = 0xF00
+};
+
 #define CTRL_STATE_UNKNOWN		0x00
 #define CTRL_STATE_PANEL_INIT		BIT(0)
 #define CTRL_STATE_MDP_ACTIVE		BIT(1)
@@ -234,6 +246,7 @@ struct mdss_dsi_ctrl_pdata {
 	int (*on) (struct mdss_panel_data *pdata);
 	int (*off) (struct mdss_panel_data *pdata);
 	int (*partial_update_fnc) (struct mdss_panel_data *pdata);
+	int (*dispparam_fnc) (struct mdss_panel_data *pdata);
 	int (*check_status) (struct mdss_dsi_ctrl_pdata *pdata);
 	int (*cmdlist_commit)(struct mdss_dsi_ctrl_pdata *ctrl, int from_mdp);
 	struct mdss_panel_data panel_data;
@@ -275,6 +288,15 @@ struct mdss_dsi_ctrl_pdata {
 
 	struct dsi_panel_cmds on_cmds;
 	struct dsi_panel_cmds off_cmds;
+	struct dsi_panel_cmds dispparam_cabcon_gui_cmds;
+	struct dsi_panel_cmds dispparam_cabcon_still_cmds;
+	struct dsi_panel_cmds dispparam_cabcon_movie_cmds;
+	struct dsi_panel_cmds dispparam_cabcoff_cmds;
+	struct dsi_panel_cmds dispparam_ceon_cmds;
+	struct dsi_panel_cmds dispparam_ceoff_cmds;
+	struct dsi_panel_cmds dispparam_warm_cmds;
+	struct dsi_panel_cmds dispparam_default_cmds;
+	struct dsi_panel_cmds dispparam_cold_cmds;
 
 	struct dcs_cmd_list cmdlist;
 	struct completion dma_comp;

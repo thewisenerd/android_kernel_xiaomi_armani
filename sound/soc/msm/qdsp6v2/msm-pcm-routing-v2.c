@@ -1403,30 +1403,34 @@ static int msm_routing_ec_ref_rx_put(struct snd_kcontrol *kcontrol,
 	switch (ucontrol->value.integer.value[0]) {
 	case 0:
 		msm_route_ec_ref_rx = 0;
-		ec_ref_port_id = SLIMBUS_0_RX;
+		ec_ref_port_id = AFE_PORT_INVALID;
 		break;
 	case 1:
 		msm_route_ec_ref_rx = 1;
-		ec_ref_port_id = AFE_PORT_ID_PRIMARY_MI2S_RX;
+		ec_ref_port_id = SLIMBUS_0_RX;
 		break;
 	case 2:
 		msm_route_ec_ref_rx = 2;
-		ec_ref_port_id = AFE_PORT_ID_PRIMARY_MI2S_TX;
+		ec_ref_port_id = AFE_PORT_ID_PRIMARY_MI2S_RX;
 		break;
 	case 3:
 		msm_route_ec_ref_rx = 3;
-		ec_ref_port_id = AFE_PORT_ID_SECONDARY_MI2S_TX;
+		ec_ref_port_id = AFE_PORT_ID_PRIMARY_MI2S_TX;
 		break;
 	case 4:
 		msm_route_ec_ref_rx = 4;
-		ec_ref_port_id = AFE_PORT_ID_TERTIARY_MI2S_TX;
+		ec_ref_port_id = AFE_PORT_ID_SECONDARY_MI2S_TX;
 		break;
 	case 5:
 		msm_route_ec_ref_rx = 5;
+		ec_ref_port_id = AFE_PORT_ID_TERTIARY_MI2S_TX;
+		break;
+	case 6:
+		msm_route_ec_ref_rx = 6;
 		ec_ref_port_id = AFE_PORT_ID_QUATERNARY_MI2S_TX;
 		break;
 	default:
-		msm_route_ec_ref_rx = 6; /* NONE */
+		msm_route_ec_ref_rx = 0; /* NONE */
 		ec_ref_port_id = AFE_PORT_INVALID;
 		break;
 	}
@@ -1437,8 +1441,8 @@ static int msm_routing_ec_ref_rx_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static const char *const ec_ref_rx[] = { "SLIM_RX", "I2S_RX", "PRI_MI2S_TX",
-	"SEC_MI2S_TX", "TERT_MI2S_TX", "QUAT_MI2S_TX", "PROXY_RX", "NONE"};
+static const char *const ec_ref_rx[] = { "NONE", "SLIM_RX", "I2S_RX", "PRI_MI2S_TX",
+	"SEC_MI2S_TX", "TERT_MI2S_TX", "QUAT_MI2S_TX", "PROXY_RX"};
 static const struct soc_enum msm_route_ec_ref_rx_enum[] = {
 	SOC_ENUM_SINGLE_EXT(8, ec_ref_rx),
 };

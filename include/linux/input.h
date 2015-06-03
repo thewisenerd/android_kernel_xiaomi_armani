@@ -1323,6 +1323,10 @@ struct input_dev {
 
 	struct list_head	h_list;
 	struct list_head	node;
+
+	bool enabled;
+	int (*enable)(struct input_dev *dev);
+	int (*disable)(struct input_dev *dev);
 };
 #define to_input_dev(d) container_of(d, struct input_dev, dev)
 

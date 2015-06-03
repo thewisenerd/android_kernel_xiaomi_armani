@@ -684,7 +684,7 @@ void wcnss_pronto_log_debug_regs(void)
 	reg = reg | WCNSS_TSTBUS_CTRL_EN | WCNSS_TSTBUS_CTRL_WRFIFO;
 	writel_relaxed(reg, tst_ctrl_addr);
 	reg = readl_relaxed(tst_addr);
-	pr_err("Rrite data FIFO testbus %08x\n", reg);
+	pr_err("Write data FIFO testbus %08x\n", reg);
 
 	/*   AXIM SEL CFG0 */
 	reg = 0;
@@ -1099,6 +1099,12 @@ static struct platform_driver wcnss_ctrl_driver = {
 	.probe	= wcnss_ctrl_probe,
 	.remove	= __devexit_p(wcnss_ctrl_remove),
 };
+
+void wcnss_get_monotonic_boottime(struct timespec *ts)
+{
+	get_monotonic_boottime(ts);
+}
+EXPORT_SYMBOL(wcnss_get_monotonic_boottime);
 
 struct device *wcnss_wlan_get_device(void)
 {

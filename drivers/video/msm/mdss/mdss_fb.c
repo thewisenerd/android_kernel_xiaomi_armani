@@ -316,6 +316,22 @@ static ssize_t mdss_mdp_show_blank_event(struct device *dev,
 	return ret;
 }
 
+static ssize_t mdss_fb_set_dispparam(struct device *dev,
+               struct device_attribute *attr, const char *buf, size_t size)
+{
+       int param, ret;
+       struct fb_info *fbi = dev_get_drvdata(dev);
+       struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)fbi->par;
+       struct mdss_panel_data *pdata = dev_get_platdata(&mfd->pdev->dev);
+
+       sscanf(buf, "%u", &param);
+
+       pdata->panel_info.panel_paramstatus = param;
+       ret = mdss_fb_send_panel_event(mfd, MDSS_EVENT_DISPPARAM, NULL);
+
+       return size;
+}
+
 static void __mdss_fb_idle_notify_work(struct work_struct *work)
 {
 	struct delayed_work *dw = to_delayed_work(work);
@@ -373,6 +389,7 @@ static ssize_t mdss_fb_get_idle_notify(struct device *dev,
 }
 
 static DEVICE_ATTR(msm_fb_type, S_IRUGO, mdss_fb_get_type, NULL);
+static DEVICE_ATTR(msm_fb_dispparam, 0644, NULL, mdss_fb_set_dispparam);
 static DEVICE_ATTR(msm_fb_split, S_IRUGO, mdss_fb_get_split, NULL);
 static DEVICE_ATTR(show_blank_event, S_IRUGO, mdss_mdp_show_blank_event, NULL);
 static DEVICE_ATTR(idle_time, S_IRUGO | S_IWUSR | S_IWGRP,
@@ -381,6 +398,7 @@ static DEVICE_ATTR(idle_notify, S_IRUGO, mdss_fb_get_idle_notify, NULL);
 
 static struct attribute *mdss_fb_attrs[] = {
 	&dev_attr_msm_fb_type.attr,
+	&dev_attr_msm_fb_dispparam.attr,
 	&dev_attr_msm_fb_split.attr,
 	&dev_attr_show_blank_event.attr,
 	&dev_attr_idle_time.attr,

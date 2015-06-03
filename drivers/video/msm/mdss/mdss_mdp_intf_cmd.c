@@ -27,7 +27,7 @@
 /* wait for at most 2 vsync for lowest refresh rate (24hz) */
 #define KOFF_TIMEOUT msecs_to_jiffies(84)
 
-#define STOP_TIMEOUT msecs_to_jiffies(16 * (VSYNC_EXPIRE_TICK + 2))
+#define STOP_TIMEOUT(hz) msecs_to_jiffies((1000 / hz) * (VSYNC_EXPIRE_TICK + 2))
 
 struct mdss_mdp_cmd_ctx {
 	struct mdss_mdp_ctl *ctl;
@@ -605,8 +605,8 @@ int mdss_mdp_cmd_stop(struct mdss_mdp_ctl *ctl)
 	spin_unlock_irqrestore(&ctx->clk_lock, flags);
 
 	if (need_wait)
-		if (wait_for_completion_timeout(&ctx->stop_comp, STOP_TIMEOUT)
-		    <= 0) {
+		if (wait_for_completion_timeout(&ctx->stop_comp, STOP_TIMEOUT(
+		    mdss_panel_get_framerate(&ctl->panel_data->panel_info))) <= 0) {
 			WARN(1, "stop cmd time out\n");
 
 			if (IS_ERR_OR_NULL(ctl->panel_data)) {

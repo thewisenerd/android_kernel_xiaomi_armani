@@ -165,12 +165,6 @@ static struct gpiomux_setting gpio_spi_susp_config = {
 	.pull = GPIOMUX_PULL_DOWN,
 };
 
-static struct gpiomux_setting gpio_spi_cs_eth_config = {
-	.func = GPIOMUX_FUNC_4,
-	.drv = GPIOMUX_DRV_6MA,
-	.pull = GPIOMUX_PULL_DOWN,
-};
-
 static struct gpiomux_setting wcnss_5wire_suspend_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv  = GPIOMUX_DRV_2MA,
@@ -306,9 +300,17 @@ static struct msm_gpiomux_config msm_blsp_configs[] __initdata = {
 		},
 	},
 	{
-		.gpio      = 22,		/* BLSP1 QUP1 SPI_CS_ETH */
+		.gpio      = 22,		/* BLSP1 QUP6 I2C_SDA */
 		.settings = {
-			[GPIOMUX_SUSPENDED] = &gpio_spi_cs_eth_config,
+			[GPIOMUX_ACTIVE] = &gpio_i2c_config,
+			[GPIOMUX_SUSPENDED] = &gpio_i2c_config,
+		},
+	},
+	{
+		.gpio      = 23,		/* BLSP1 QUP6 I2C_SCL */
+		.settings = {
+			[GPIOMUX_ACTIVE] = &gpio_i2c_config,
+			[GPIOMUX_SUSPENDED] = &gpio_i2c_config,
 		},
 	},
 	{					/*  NFC   */
@@ -894,15 +896,43 @@ static struct msm_gpiomux_config msm8226_sdc3_configs[] __initdata = {
 		},
 	},
 };
-
-static void msm_gpiomux_sdc3_install(void)
-{
-	msm_gpiomux_install(msm8226_sdc3_configs,
-			    ARRAY_SIZE(msm8226_sdc3_configs));
-}
-#else
-static void msm_gpiomux_sdc3_install(void) {}
 #endif /* CONFIG_MMC_MSM_SDC3_SUPPORT */
+
+static struct gpiomux_setting hs_uart_sw_suspend_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+#ifdef CONFIG_MSM_JACK_AS_UART
+	.dir = GPIOMUX_OUT_HIGH, // UART
+#else
+	.dir = GPIOMUX_OUT_LOW, // Headphone
+#endif
+};
+
+static struct msm_gpiomux_config hs_uart_sw_configs[] __initdata = {
+	{
+		.gpio = 31,
+		.settings = {
+			[GPIOMUX_SUSPENDED] = &hs_uart_sw_suspend_cfg,
+		},
+	},
+};
+
+static struct gpiomux_setting external_ovp_actv_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_8MA,
+	.pull = GPIOMUX_PULL_NONE,
+	.dir = GPIOMUX_OUT_LOW,
+};
+
+static struct msm_gpiomux_config pm8226_ovp_configs[] __initdata = {
+	{
+		.gpio      = 109,
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &external_ovp_actv_cfg,
+			[GPIOMUX_SUSPENDED] = NULL,
+		},
+	},
+};
 
 void __init msm8226_init_gpiomux(void)
 {
@@ -922,17 +952,18 @@ void __init msm8226_init_gpiomux(void)
 
 	if (of_board_is_skuf())
 		msm_gpiomux_install(msm_skuf_blsp_configs,
-			ARRAY_SIZE(msm_skuf_blsp_configs));
+				ARRAY_SIZE(msm_skuf_blsp_configs));
 	else {
 		msm_gpiomux_install(msm_blsp_configs,
-			ARRAY_SIZE(msm_blsp_configs));
+				ARRAY_SIZE(msm_blsp_configs));
+
 		if (machine_is_msm8226())
 			msm_gpiomux_install(msm_blsp_spi_cs_config,
-				ARRAY_SIZE(msm_blsp_spi_cs_config));
+					ARRAY_SIZE(msm_blsp_spi_cs_config));
 	}
 
 	msm_gpiomux_install(wcnss_5wire_interface,
-				ARRAY_SIZE(wcnss_5wire_interface));
+			ARRAY_SIZE(wcnss_5wire_interface));
 
 	msm_gpiomux_install(&sd_card_det, 1);
 	if (of_board_is_skuf())
@@ -953,16 +984,19 @@ void __init msm8226_init_gpiomux(void)
 
 	if (of_board_is_skuf())
 		msm_gpiomux_install(msm_sensor_configs_skuf_plus,
-			ARRAY_SIZE(msm_sensor_configs_skuf_plus));
+				ARRAY_SIZE(msm_sensor_configs_skuf_plus));
 
 	msm_gpiomux_install(msm_auxpcm_configs,
 			ARRAY_SIZE(msm_auxpcm_configs));
 
 	if (of_board_is_cdp() || of_board_is_mtp() || of_board_is_xpm())
 		msm_gpiomux_install(usb_otg_sw_configs,
-					ARRAY_SIZE(usb_otg_sw_configs));
+				ARRAY_SIZE(usb_otg_sw_configs));
 
-	msm_gpiomux_sdc3_install();
+#ifdef CONFIG_MMC_MSM_SDC3_SUPPORT
+	msm_gpiomux_install(msm8226_sdc3_configs,
+			ARRAY_SIZE(msm8226_sdc3_configs));
+#endif /* CONFIG_MMC_MSM_SDC3_SUPPORT */
 
 	/*
 	 * HSIC STROBE gpio is also used by the ethernet. Install HSIC
@@ -974,11 +1008,18 @@ void __init msm8226_init_gpiomux(void)
 		msm_hsic_configs[0].gpio = 119; /* STROBE */
 		msm_hsic_configs[1].gpio = 120; /* DATA */
 	}
-	msm_gpiomux_install(msm_hsic_configs, ARRAY_SIZE(msm_hsic_configs));
+	msm_gpiomux_install(msm_hsic_configs,
+			ARRAY_SIZE(msm_hsic_configs));
 #endif
 	if (machine_is_msm8926() && of_board_is_mtp())
 		msm_gpiomux_install(smsc_hub_configs,
 			ARRAY_SIZE(smsc_hub_configs));
+
+	msm_gpiomux_install(hs_uart_sw_configs,
+			ARRAY_SIZE(hs_uart_sw_configs));
+
+	msm_gpiomux_install(pm8226_ovp_configs,
+			ARRAY_SIZE(pm8226_ovp_configs));
 }
 
 static void wcnss_switch_to_gpio(void)

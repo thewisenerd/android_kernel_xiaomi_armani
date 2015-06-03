@@ -248,8 +248,8 @@
 		pm8226_l5: regulator-l5 {
 			regulator-name = "8226_l5";
 			regulator-min-microvolt = <1200000>;
-			regulator-max-microvolt = <1200000>;
-			qcom,init-voltage = <1200000>;
+			regulator-max-microvolt = <1290000>;
+			qcom,init-voltage = <1290000>;
 			status = "okay";
 		};
 	};

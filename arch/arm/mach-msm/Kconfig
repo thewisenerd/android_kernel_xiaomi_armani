@@ -3009,6 +3009,12 @@ config MSM_XPU_ERR_FATAL
 	help
 	 Select if XPU violations have to be configured as fatal errors.
 
+config CONFIG_MSM_JACK_AS_UART
+	bool "Use jack as UART iterface"
+	default n
+	help
+	  Say Y here if you want to use jack connector as UART interface.
+
 config MSM_CPR_REGULATOR
 	bool "RBCPR regulator driver for APC"
 	depends on REGULATOR
