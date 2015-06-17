@@ -37,13 +37,10 @@
 #endif
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
-#include <linux/input/sweep2wake.h>
-#endif
-#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-#include <linux/input/doubletap2wake.h>
-#endif
-#endif
+#ifdef CONFIG_TOUCHSCREEN_PROJECT_NYX
+#include <linux/input/nyx_config.h>
+#endif // PROJECT_NYX
+#endif // PREVENT_SLEEP
 
 //register address
 #define FT5X0X_REG_DEVIDE_MODE	0x00
@@ -931,16 +928,11 @@ int ft5x06_suspend(struct ft5x06_data *ft5x06)
 	int error = 0;
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	bool prevent_sleep = false;
-#endif
-#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE)
-	prevent_sleep = (s2w_switch > 0) && (s2w_s2sonly == 0);
-#endif
-#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
-#endif
-#endif
+#if defined(CONFIG_TOUCHSCREEN_PROJECT_NYX)
+	prevent_sleep = nyx_switch;
+#endif // PROJECT_NYX
+#endif // PREVENT_SLEEP
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
 	if (prevent_sleep) {
@@ -975,16 +967,11 @@ int ft5x06_resume(struct ft5x06_data *ft5x06)
 	struct ft5x06_ts_platform_data *pdata = ft5x06->dev->platform_data;
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	bool prevent_sleep = false;
-#endif
-#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE)
-	prevent_sleep = (s2w_switch > 0) && (s2w_s2sonly == 0);
-#endif
-#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
-#endif
-#endif
+#if defined(CONFIG_TOUCHSCREEN_PROJECT_NYX)
+	prevent_sleep = nyx_switch;
+#endif // PROJECT_NYX
+#endif // PREVENT_SLEEP
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
 	if (prevent_sleep) {
