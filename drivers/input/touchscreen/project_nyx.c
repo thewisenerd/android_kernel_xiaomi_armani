@@ -32,9 +32,6 @@
 #include <linux/notifier.h>
 #include <linux/fb.h>
 
-/* finally, import config */
-#include <linux/input/nyx_config.h>
-
 /* module stuff */
 #define DRIVER_AUTHOR "thewisenerd <thewisenerd@protonmail.com>"
 #define DRIVER_DESCRIPTION "project nyx"
@@ -48,10 +45,14 @@ MODULE_LICENSE("GPLv2");
 /* module stuff (end) */
 
 /* config variables */
-#define NYX_DEFAULT 1
-#define NYX_DEBUG   1
-#define NYX_DELTA   5 // 10 maybe?
+#define NYX_DEFAULT  1
+#define NYX_DEBUG    1
+#define NYX_VERB_LVL 2
+#define NYX_DELTA    5 // 10 maybe?
 /* config variables (end) */
+
+/* finally, import config */
+#include <linux/input/nyx_config.h>
 
 /* data variables. */
 int nyx_switch = NYX_DEFAULT;
@@ -78,20 +79,29 @@ static struct notifier_block nyx_fb_notif;
 #define calc_delta(X, Y)  (abs(X - Y))
 
 void nyx_reset(void) {
+#ifdef NYX_DBG_LVL2
+	pr_info(LOGTAG"%s: called!\n", __func__);
+#endif
 	nyx_count = 0;
 }
 
 void nyx_proceed(void) {
+#ifdef NYX_DBG_LVL1
+	pr_info(LOGTAG"%s: called!\n", __func__);
+#endif
 	; // nothing for now
 }
 
 static inline void new_touch(int *x, int *y) {
+#ifdef NYX_DBG_LVL3
+	pr_info(LOGTAG"%s: called!\n", __func__);
+#endif
 	x_pre = *x;
 	y_pre = *y;
 }
 
 static inline void log_touch(int *x, int *y) {
-#if NYX_DEBUG
+#ifdef NYX_DBG_LVL3
 	pr_info(LOGTAG"%s: logging touch %i: %i, %i\n", __func__, nyx_count, *x, *y);
 #endif
  /*
@@ -126,6 +136,9 @@ static inline void log_touch(int *x, int *y) {
 }
 
 static void nyx_detect(int *x, int *y) {
+#ifdef NYX_DBG_LVL3
+	pr_info(LOGTAG"%s: called with co-ords(%i, %i)!\n", __func__, *x, *y);
+#endif
 	if (!(nyx_count)) {
 		new_touch(x, y);
 		log_touch(x, y);
@@ -146,7 +159,7 @@ static void nyx_input_callback(struct work_struct *unused) {
 
 static void nyx_input_event(struct input_handle *handle, unsigned int type,
 				unsigned int code, int value) {
-#if NYX_DEBUG
+#if NYX_DBG_LVL3
 	pr_info(LOGTAG"code: %s|%u, val: %i\n",
 		((code==ABS_MT_POSITION_X) ? "X" :
 		(code==ABS_MT_POSITION_Y) ? "Y" :
@@ -157,11 +170,17 @@ static void nyx_input_event(struct input_handle *handle, unsigned int type,
 		return;
 
 	if (code == ABS_MT_SLOT) {
+#ifdef NYX_DBG_LVL2
+		pr_info(LOGTAG"%s: ABS_MT_SLOT; reset!\n", __func__);
+#endif
 		nyx_reset();
 		return;
 	}
 
 	if (code == ABS_MT_TRACKING_ID && value == -1) {
+#ifdef NYX_DBG_LVL2
+		pr_info(LOGTAG"%s: ABS_MT_TRACKING_ID; _proceed && _reset!\n", __func__);
+#endif
 		nyx_proceed();
 		nyx_reset();
 		return;
@@ -177,7 +196,7 @@ static void nyx_input_event(struct input_handle *handle, unsigned int type,
 		touch_y_called = true;
 	}
 
-	if (touch_x_called && touch_y_called) {
+	if (touch_x_called || touch_y_called) {
 		touch_x_called = false;
 		touch_y_called = false;
 		queue_work_on(0, nyx_input_wq, &nyx_input_work);

@@ -54,6 +54,25 @@
 #define NYX_TOTAL_SIZEOF NYX_TOTAL_SIZEOF + NYX_SIZEOF_PAGENEXT
 #endif
 
+#ifdef NYX_DEBUG
+#if NYX_DEBUG == 1
+#ifdef NYX_VERB_LVL
+#if NYX_VERB_LVL == 1
+#define NYX_DBG_LVL1
+#elif NYX_VERB_LVL == 2
+#define NYX_DBG_LVL1
+#define NYX_DBG_LVL2
+#elif NYX_VERB_LVL == 3
+#define NYX_DBG_LVL1
+#define NYX_DBG_LVL2
+#define NYX_DBG_LVL3
+#else
+#define NYX_DBG_LVL2
+#endif // else
+#endif // ifdef NYX_VERB_LVL
+#endif // if nyx_debug
+#endif // ifdef nyx_debug
+
 /* -------------------------------------------------------------------------- */
 
 extern int nyx_switch;
