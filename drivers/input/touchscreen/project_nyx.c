@@ -61,6 +61,7 @@ static int x_pre = 0, y_pre = 0;
 static int touch_x = 0, touch_y = 0;
 static bool touch_x_called = false, touch_y_called = false;
 static unsigned nyx_count = 0;
+static bool lock_gesture  = false;
 
 static u8 charbuf[NYX_SIZEOF_COORD * NYX_SIZEOF_CHARBUF];
 
@@ -82,14 +83,43 @@ void nyx_reset(void) {
 #ifdef NYX_DBG_LVL2
 	pr_info(LOGTAG"%s: called!\n", __func__);
 #endif
+
+	if (lock_gesture) {
+#ifdef NYX_DBG_LVL2
+		pr_err(LOGTAG"%s: gesture locked!\n", __func__);
+#endif
+		return;
+	}
+
 	nyx_count = 0;
 }
 
 void nyx_proceed(void) {
+/*
+	char *argv[] = { ONEIROI_BIN, NULL, NULL };
+	static char *envp[] = {
+		"HOME=/",
+		"TERM=linux",
+		"PATH=/sbin:/bin:/usr/sbin:/usr/bin", NULL };
+*/
+
 #ifdef NYX_DBG_LVL1
 	pr_info(LOGTAG"%s: called!\n", __func__);
 #endif
-	; // nothing for now
+
+	/* lock gestures */
+	lock_gesture = true;
+
+//	if ( call_usermodehelper( argv[0], argv, envp, UMH_NO_WAIT ) ) {
+	if ( 0 ) {
+#ifdef NYX_DBG_LVL1
+		pr_err(LOGTAG"%s: calling usermode helper "ONEIROI_BIN" failed!\n", __func__);
+#endif
+	} else {
+#ifdef NYX_DBG_LVL2
+		pr_err(LOGTAG"%s: calling usermode helper "ONEIROI_BIN" success!\n", __func__);
+#endif
+	};
 }
 
 static inline void new_touch(int *x, int *y) {
@@ -112,6 +142,20 @@ static inline void log_touch(int *x, int *y) {
   *
 	*/
 
+	if (nyx_count == NYX_SIZEOF_CHARBUF) {
+#ifdef NYX_DBG_LVL2
+		pr_err(LOGTAG"%s: run out of buffer!\n", __func__);
+#endif
+		return;
+	}
+
+	if (lock_gesture) {
+#ifdef NYX_DBG_LVL2
+		pr_err(LOGTAG"%s: gesture locked!\n", __func__);
+#endif
+		return;
+	}
+
 	/* get first 8 bits of x; store in a */
 	charbuf[(nyx_count * NYX_SIZEOF_COORD)]     = ((*x & 0xfff) >> 4);
 
@@ -120,9 +164,8 @@ static inline void log_touch(int *x, int *y) {
 	 * 2. get first 4 bits of y;
 	 * voila?
 	 */
-	charbuf[(nyx_count * NYX_SIZEOF_COORD) + 1] = \
-		((*x & 0x0f) << 4) \
-		& ((*y & 0xfff) >> 8);
+	charbuf[(nyx_count * NYX_SIZEOF_COORD) + 1]  = ((*x & 0x000f) << 4);
+	charbuf[(nyx_count * NYX_SIZEOF_COORD) + 1] |= ((*y & 0xffff) >> 8);
 
 	/* shift get last 8 bits of y and store in c */
 	charbuf[(nyx_count * NYX_SIZEOF_COORD) + 2] = (*y & 0xff);
@@ -146,8 +189,8 @@ static void nyx_detect(int *x, int *y) {
 		if ((calc_delta(*x, x_pre) > NYX_DELTA) ||
 				(calc_delta(*y, y_pre) > NYX_DELTA)) {
 				log_touch(x, y);
-			}
 		}
+	}
 }
 
 static void nyx_input_callback(struct work_struct *unused) {
@@ -159,7 +202,7 @@ static void nyx_input_callback(struct work_struct *unused) {
 
 static void nyx_input_event(struct input_handle *handle, unsigned int type,
 				unsigned int code, int value) {
-#if NYX_DBG_LVL3
+#ifdef NYX_DBG_LVL3
 	pr_info(LOGTAG"code: %s|%u, val: %i\n",
 		((code==ABS_MT_POSITION_X) ? "X" :
 		(code==ABS_MT_POSITION_Y) ? "Y" :
@@ -289,7 +332,7 @@ static int fb_notifier_callback(struct notifier_block *self,
 }
 
 
-static ssize_t nyx_show(struct device *dev,
+static ssize_t nyx_switch_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	size_t count = 0;
@@ -299,7 +342,7 @@ static ssize_t nyx_show(struct device *dev,
 	return count;
 }
 
-static ssize_t nyx_dump(struct device *dev,
+static ssize_t nyx_switch_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
 	if (buf[1] == '\n') {
@@ -318,7 +361,64 @@ static ssize_t nyx_dump(struct device *dev,
 	return count;
 }
 static DEVICE_ATTR(nyx_switch, (S_IWUSR|S_IRUGO),
-	nyx_show, nyx_dump);
+	nyx_switch_show, nyx_switch_dump);
+
+static ssize_t nyx_data_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	size_t count = 0;
+	int i = 0;
+
+/*
+ * we have byte size 2; since max of 512.
+ */
+
+	u8 nyx_header[NYX_SIZEOF_HEADER_BUF];
+
+	// shift 8 bits to the right; get first byte
+	nyx_header[0] = (nyx_count >> 8) ? (nyx_count >> 8) : 0xff ;
+	// get second byte.
+	nyx_header[1] = (nyx_count & 0xff);
+
+	// shift 8 bits to the right; get first byte
+	count += snprintf(buf+count, PAGE_SIZE-count,
+			"%c", nyx_header[0]);
+	// get second byte.
+	count += snprintf(buf+count, PAGE_SIZE-count,
+			"%c", nyx_header[1]);
+
+	for (i = 0; i <= nyx_count; i++) {
+		count += snprintf(buf+count, PAGE_SIZE-count,
+			"%c", charbuf[(i * NYX_SIZEOF_COORD)]);
+		count += snprintf(buf+count, PAGE_SIZE-count,
+			"%c", charbuf[(i * NYX_SIZEOF_COORD) + 1]);
+		count += snprintf(buf+count, PAGE_SIZE-count,
+			"%c", charbuf[(i * NYX_SIZEOF_COORD) + 2]);
+	}
+
+	/* unlock lock_gesture */
+	//lock_gesture = false;
+	/* reset count */
+	//nyx_reset();
+
+	return count;
+}
+static DEVICE_ATTR(nyx_data, (S_IWUSR|S_IRUGO),
+	nyx_data_show, NULL);
+
+static ssize_t nyx_reset_dump(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+
+	/* unlock lock_gesture */
+	lock_gesture = false;
+	/* reset count */
+	nyx_reset();
+
+	return count;
+}
+static DEVICE_ATTR(nyx_reset, (S_IWUSR|S_IRUGO),
+	NULL, nyx_reset_dump);
 
 static int __init nyx_init(void) {
 	int rc = 0;
@@ -340,6 +440,14 @@ static int __init nyx_init(void) {
 	rc = sysfs_create_file(nyx_kobj, &dev_attr_nyx_switch.attr);
 	if (rc) {
 		pr_warn("%s: sysfs_create_file failed for nyx_switch\n", __func__);
+	}
+	rc = sysfs_create_file(nyx_kobj, &dev_attr_nyx_data.attr);
+	if (rc) {
+		pr_warn("%s: sysfs_create_file failed for nyx_data\n", __func__);
+	}
+	rc = sysfs_create_file(nyx_kobj, &dev_attr_nyx_reset.attr);
+	if (rc) {
+		pr_warn("%s: sysfs_create_file failed for nyx_reset\n", __func__);
 	}
 
 	nyx_fb_notif.notifier_call = fb_notifier_callback;

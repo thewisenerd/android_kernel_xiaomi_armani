@@ -73,6 +73,8 @@
 #endif // if nyx_debug
 #endif // ifdef nyx_debug
 
+#define ONEIROI_BIN "/data/local/tmp/oneiroi"
+
 /* -------------------------------------------------------------------------- */
 
 extern int nyx_switch;
