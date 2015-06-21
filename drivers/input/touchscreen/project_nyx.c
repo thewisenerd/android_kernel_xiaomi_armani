@@ -49,6 +49,8 @@ MODULE_LICENSE("GPLv2");
 #define NYX_DEBUG    1
 #define NYX_VERB_LVL 2
 #define NYX_DELTA    5 // 10 maybe?
+#define NYX_MIN      32
+#define NYX_TRESHOLD (NYX_MIN - 1)
 /* config variables (end) */
 
 /* finally, import config */
@@ -224,7 +226,8 @@ static void nyx_input_event(struct input_handle *handle, unsigned int type,
 #ifdef NYX_DBG_LVL2
 		pr_info(LOGTAG"%s: ABS_MT_TRACKING_ID; _proceed && _reset!\n", __func__);
 #endif
-		nyx_proceed();
+		if (nyx_count > NYX_TRESHOLD)
+			nyx_proceed();
 		nyx_reset();
 		return;
 	}
