@@ -62,7 +62,6 @@ static int touch_x = 0, touch_y = 0;
 static bool touch_x_called = false, touch_y_called = false;
 static unsigned nyx_count = 0;
 static bool lock_gesture  = false;
-static bool lock_result   = false;
 
 static u8 charbuf[NYX_SIZEOF_COORD * NYX_SIZEOF_CHARBUF];
 
@@ -74,11 +73,6 @@ static struct workqueue_struct *nyx_input_wq;
 static struct work_struct nyx_input_work;
 
 static struct kobject *nyx_kobj;
-
-static struct Result {
-	int   id;
-	char  name[256];
-} gesture;
 
 static struct notifier_block nyx_fb_notif;
 /* data variables (end) */
@@ -403,48 +397,28 @@ static ssize_t nyx_data_show(struct device *dev,
 	}
 
 	/* unlock lock_gesture */
-	lock_gesture = false;
+	//lock_gesture = false;
 	/* reset count */
-	nyx_reset();
+	//nyx_reset();
 
 	return count;
 }
 static DEVICE_ATTR(nyx_data, (S_IWUSR|S_IRUGO),
 	nyx_data_show, NULL);
 
-static ssize_t nyx_gesture_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	size_t count = 0;
-
-	count += sprintf(buf, "%03d", gesture.id);
-
-	if (gesture.id == 0) {
-		count += sprintf(buf+count, "\n");
-		return count;
-	}
-
-	count += sprintf(buf+count, "|%s\n", gesture.name);
-
-	gesture.id = 0;
-	lock_result = false;
-
-	return count;
-}
-
-static ssize_t nyx_gesture_dump(struct device *dev,
+static ssize_t nyx_reset_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	if (lock_result)
-		return count;
 
-	sscanf(buf, "%03d|%s\n", &gesture.id, gesture.name);
+	/* unlock lock_gesture */
+	lock_gesture = false;
+	/* reset count */
+	nyx_reset();
 
-	lock_result = true;
 	return count;
 }
-static DEVICE_ATTR(nyx_gesture, (S_IWUSR|S_IRUGO),
-	nyx_gesture_show, nyx_gesture_dump);
+static DEVICE_ATTR(nyx_reset, (S_IWUSR|S_IRUGO),
+	NULL, nyx_reset_dump);
 
 static int __init nyx_init(void) {
 	int rc = 0;
@@ -471,17 +445,15 @@ static int __init nyx_init(void) {
 	if (rc) {
 		pr_warn("%s: sysfs_create_file failed for nyx_data\n", __func__);
 	}
-	rc = sysfs_create_file(nyx_kobj, &dev_attr_nyx_gesture.attr);
+	rc = sysfs_create_file(nyx_kobj, &dev_attr_nyx_reset.attr);
 	if (rc) {
-		pr_warn("%s: sysfs_create_file failed for nyx_gesture\n", __func__);
+		pr_warn("%s: sysfs_create_file failed for nyx_reset\n", __func__);
 	}
 
 	nyx_fb_notif.notifier_call = fb_notifier_callback;
 	rc = fb_register_client(&nyx_fb_notif);
 	if (rc)
 		pr_err("%s: Unable to register fb_notifier: %d\n", __func__, rc);
-
-	gesture.id = 0;
 
 	return 0; // rc?
 }
