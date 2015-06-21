@@ -423,7 +423,7 @@ static DEVICE_ATTR(nyx_reset, (S_IWUSR|S_IRUGO),
 static int __init nyx_init(void) {
 	int rc = 0;
 
-	nyx_input_wq = create_workqueue("d2wiwq");
+	nyx_input_wq = create_workqueue("nyxiwq");
 	if (!nyx_input_wq) {
 		pr_err("%s: Failed to create nyxiwq workqueue\n", __func__);
 		return -EFAULT;
