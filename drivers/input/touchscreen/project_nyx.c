@@ -63,7 +63,6 @@ static int x_pre = 0, y_pre = 0;
 static int touch_x = 0, touch_y = 0;
 static bool touch_x_called = false, touch_y_called = false;
 static unsigned nyx_count = 0;
-static unsigned nyx_set_gesture = 0;
 static bool lock_gesture  = false;
 static bool lock_result   = false;
 
@@ -81,7 +80,7 @@ static struct kobject *nyx_kobj;
 static struct Result {
 	int   id;
 	char  name[256];
-} gesture, gesture_buf;;
+} gesture;
 
 static struct notifier_block nyx_fb_notif;
 /* data variables (end) */
@@ -104,18 +103,13 @@ void nyx_reset(void) {
 }
 
 void nyx_proceed(void) {
-	int rc;
-
-	char *argv[3];
-	char *envp[3];
-
-
-
-	char *argv_set[] = { ONEIROI_BIN, "--set", NULL };
-	char *argv_detect[] = { ONEIROI_BIN, "--detect", NULL };
+/*
+	char *argv[] = { ONEIROI_BIN, NULL, NULL };
 	static char *envp[] = {
 		"HOME=/",
-		"/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin", NULL };
+		"TERM=linux",
+		"PATH=/sbin:/bin:/usr/sbin:/usr/bin", NULL };
+*/
 
 #ifdef NYX_DBG_LVL1
 	pr_info(LOGTAG"%s: called!\n", __func__);
@@ -124,7 +118,8 @@ void nyx_proceed(void) {
 	/* lock gestures */
 	lock_gesture = true;
 
-	if ( call_usermodehelper( argv[0], argv, envp, UMH_NO_WAIT ) ) {
+//	if ( call_usermodehelper( argv[0], argv, envp, UMH_NO_WAIT ) ) {
+	if ( 0 ) {
 #ifdef NYX_DBG_LVL1
 		pr_err(LOGTAG"%s: calling usermode helper "ONEIROI_BIN" failed!\n", __func__);
 #endif
@@ -454,20 +449,6 @@ static ssize_t nyx_gesture_dump(struct device *dev,
 static DEVICE_ATTR(nyx_gesture, (S_IWUSR|S_IRUGO),
 	nyx_gesture_show, nyx_gesture_dump);
 
-static ssize_t nyx_set_gesture_dump(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
-{
-	if (lock_result)
-		return count;
-
-	sscanf(buf, "%03d|%s\n", &gesture_buf.id, gesture_buf.name);
-
-	lock_result = true;
-	return count;
-}
-static DEVICE_ATTR(nyx_set_gesture, (S_IWUSR|S_IRUGO),
-	NULL, nyx_set_gesture_dump);
-
 static int __init nyx_init(void) {
 	int rc = 0;
 
@@ -496,10 +477,6 @@ static int __init nyx_init(void) {
 	rc = sysfs_create_file(nyx_kobj, &dev_attr_nyx_gesture.attr);
 	if (rc) {
 		pr_warn("%s: sysfs_create_file failed for nyx_gesture\n", __func__);
-	}
-	rc = sysfs_create_file(nyx_kobj, &dev_attr_nyx_set_gesture.attr);
-	if (rc) {
-		pr_warn("%s: sysfs_create_file failed for nyx_set_gesture\n", __func__);
 	}
 
 	nyx_fb_notif.notifier_call = fb_notifier_callback;
