@@ -21,6 +21,7 @@
 /* standard module headers */
 #include <linux/module.h>
 #include <linux/init.h>
+#include <linux/kmod.h>
 
 /* required for PAGE_SIZE */
 #include <asm/page.h>
@@ -63,7 +64,7 @@ static int x_pre = 0, y_pre = 0;
 static int touch_x = 0, touch_y = 0;
 static bool touch_x_called = false, touch_y_called = false;
 static unsigned nyx_count = 0;
-static unsigned nyx_set_gesture = 0;
+static bool nyx_set_gest = 0;
 static bool lock_gesture  = false;
 static bool lock_result   = false;
 
@@ -81,7 +82,7 @@ static struct kobject *nyx_kobj;
 static struct Result {
 	int   id;
 	char  name[256];
-} gesture, gesture_buf;;
+} gesture;
 
 static struct notifier_block nyx_fb_notif;
 /* data variables (end) */
@@ -104,18 +105,21 @@ void nyx_reset(void) {
 }
 
 void nyx_proceed(void) {
-	int rc;
-
 	char *argv[3];
 	char *envp[3];
 
+	argv[0] = ONEIROI_BIN;
 
+	if (nyx_set_gest)
+		argv[1] = "--set";
+	else
+		argv[1] = "--detect";
 
-	char *argv_set[] = { ONEIROI_BIN, "--set", NULL };
-	char *argv_detect[] = { ONEIROI_BIN, "--detect", NULL };
-	static char *envp[] = {
-		"HOME=/",
-		"/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin", NULL };
+	argv[2] = NULL;
+
+	envp[0] = "HOME=/";
+	envp[1] = "PATH=/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin";
+	envp[2] = NULL;
 
 #ifdef NYX_DBG_LVL1
 	pr_info(LOGTAG"%s: called!\n", __func__);
@@ -124,15 +128,7 @@ void nyx_proceed(void) {
 	/* lock gestures */
 	lock_gesture = true;
 
-	if ( call_usermodehelper( argv[0], argv, envp, UMH_NO_WAIT ) ) {
-#ifdef NYX_DBG_LVL1
-		pr_err(LOGTAG"%s: calling usermode helper "ONEIROI_BIN" failed!\n", __func__);
-#endif
-	} else {
-#ifdef NYX_DBG_LVL2
-		pr_err(LOGTAG"%s: calling usermode helper "ONEIROI_BIN" success!\n", __func__);
-#endif
-	};
+	call_usermodehelper( argv[0], argv, envp, UMH_NO_WAIT );
 }
 
 static inline void new_touch(int *x, int *y) {
@@ -434,8 +430,14 @@ static ssize_t nyx_gesture_show(struct device *dev,
 
 	count += sprintf(buf+count, "|%s\n", gesture.name);
 
+	// reset gesture && unlock gesture.
 	gesture.id = 0;
 	lock_result = false;
+	lock_gesture = false;
+	nyx_reset();
+
+	/* reset nyx_set_gest */
+	nyx_set_gest = false;
 
 	return count;
 }
@@ -457,12 +459,23 @@ static DEVICE_ATTR(nyx_gesture, (S_IWUSR|S_IRUGO),
 static ssize_t nyx_set_gesture_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	if (lock_result)
-		return count;
+	if (lock_result) {
+		/* if lock_result viz. we got a gesture already; clear it! */
+		gesture.id = 0;
 
-	sscanf(buf, "%03d|%s\n", &gesture_buf.id, gesture_buf.name);
+		// unlock lock_result
+		lock_result = false;
 
-	lock_result = true;
+		lock_gesture = false;
+
+		//  reset nyx_count
+		nyx_reset();
+	}
+
+	sscanf(buf, "%03d|%s\n", &gesture.id, gesture.name);
+
+	nyx_set_gest = true;
+
 	return count;
 }
 static DEVICE_ATTR(nyx_set_gesture, (S_IWUSR|S_IRUGO),
