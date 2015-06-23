@@ -234,7 +234,8 @@ static void nyx_input_event(struct input_handle *handle, unsigned int type,
 		pr_info(LOGTAG"%s: ABS_MT_TRACKING_ID; _proceed && _reset!\n", __func__);
 #endif
 		if (nyx_count > NYX_TRESHOLD)
-			nyx_proceed();
+			if (!lock_gesture)
+				nyx_proceed();
 		nyx_reset();
 		return;
 	}
