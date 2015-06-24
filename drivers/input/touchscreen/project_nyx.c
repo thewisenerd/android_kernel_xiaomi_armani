@@ -398,6 +398,14 @@ static ssize_t nyx_data_show(struct device *dev,
 	count += snprintf(buf+count, PAGE_SIZE-count,
 			"%c", nyx_header[1]);
 
+	if (nyx_set_gest) {
+		count += snprintf(buf+count, PAGE_SIZE-count,
+				"%c", 's');
+	} else {
+		count += snprintf(buf+count, PAGE_SIZE-count,
+				"%c", 'g');
+	}
+
 	for (i = 0; i <= nyx_count; i++) {
 		count += snprintf(buf+count, PAGE_SIZE-count,
 			"%c", charbuf[(i * NYX_SIZEOF_COORD)]);
