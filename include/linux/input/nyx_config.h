@@ -73,7 +73,7 @@
 #endif // if nyx_debug
 #endif // ifdef nyx_debug
 
-#define ONEIROI_BIN "/data/local/tmp/oneiroi"
+#define ONEIROI_NOTIFY "/sys/nyx/nyx_gesture"
 
 /* -------------------------------------------------------------------------- */
 

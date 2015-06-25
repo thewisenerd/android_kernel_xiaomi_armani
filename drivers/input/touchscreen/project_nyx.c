@@ -23,6 +23,10 @@
 #include <linux/init.h>
 #include <linux/kmod.h>
 
+#include <linux/file.h>
+#include <linux/namei.h> /* LOOKUP_FOLLOW */
+#include <linux/fsnotify.h>
+
 /* required for PAGE_SIZE */
 #include <asm/page.h>
 
@@ -105,30 +109,35 @@ void nyx_reset(void) {
 }
 
 void nyx_proceed(void) {
-	char *argv[3];
-	char *envp[3];
-
-	argv[0] = ONEIROI_BIN;
-
-	if (nyx_set_gest)
-		argv[1] = "--set";
-	else
-		argv[1] = "--detect";
-
-	argv[2] = NULL;
-
-	envp[0] = "HOME=/";
-	envp[1] = "PATH=/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin";
-	envp[2] = NULL;
+	int error;
+	struct path path;
+/* ref
+	struct inode *inode;
+	__u32 mask = 0;
+*/
 
 #ifdef NYX_DBG_LVL1
 	pr_info(LOGTAG"%s: called!\n", __func__);
 #endif
 
+	error = user_path_at(AT_FDCWD, ONEIROI_NOTIFY, 0, &path);
+	if (error) {
+		pr_info(LOGTAG"%s: %d: error: %d\n", __func__, __LINE__, error);
+		return;
+	}
+
+/* ref
+	path_put(&path);
+
+	inode = path.dentry->d_inode;
+	mask |= ATTR_SIZE;
+
+	error = fsnotify(inode, mask, inode, FSNOTIFY_EVENT_INODE, NULL, 0);
+	pr_info(LOGTAG"%s: %d: error: %d\n", __func__, __LINE__, error);
+*/
+
 	/* lock gestures */
 	lock_gesture = true;
-
-	call_usermodehelper( argv[0], argv, envp, UMH_NO_WAIT );
 }
 
 static inline void new_touch(int *x, int *y) {
