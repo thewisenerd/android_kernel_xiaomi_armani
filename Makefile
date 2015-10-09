@@ -584,6 +584,20 @@ endif
 # Use make W=1 to enable this warning (see scripts/Makefile.build)
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
 
+# Disable a few more warnings, please.
+KBUILD_CFLAGS += $(call cc-disable-warning, array-bounds)
+KBUILD_CFLAGS += $(call cc-disable-warning, clobbered)
+KBUILD_CFLAGS += $(call cc-disable-warning, unused)
+KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-parameter)
+#KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
+KBUILD_CFLAGS += $(call cc-disable-warning, unused-const-variable)
+KBUILD_CFLAGS += $(call cc-disable-warning, maybe-uninitialized)
+KBUILD_CFLAGS += $(call cc-disable-warning, strict-overflow)
+KBUILD_CFLAGS += $(call cc-disable-warning, shift-overflow)
+KBUILD_CFLAGS += $(call cc-disable-warning, bool-compare)
+KBUILD_CFLAGS += $(call cc-disable-warning, discarded-array-qualifiers)
+KBUILD_CFLAGS += $(call cc-disable-warning, tautological-compare)
+
 ifdef CONFIG_FRAME_POINTER
 KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls
 else
