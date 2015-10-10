@@ -28,6 +28,7 @@
 #include <linux/wakelock.h>
 #include <linux/power_supply.h>
 #include <linux/input/mt.h>
+#include <asm-generic/cputime.h>
 #include "ft5x06_ts.h"
 #if defined(CONFIG_FB)
 #include <linux/notifier.h>
@@ -149,6 +150,7 @@ struct ft5x06_finger {
 	int size;
 	int pressure;
 	bool detect;
+	cputime64_t time;
 };
 
 struct ft5x06_tracker {
@@ -177,6 +179,10 @@ struct ft5x06_data {
 	u8 chip_id;
 	u8 is_usb_plug_in;
 	int current_index;
+	struct input_dev * power_input;
+	struct ft5x06_finger power_finger;
+	int d2w_switch;
+	bool touch_cnt;
 #if defined(CONFIG_FB)
 	struct notifier_block fb_notif;
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
@@ -783,6 +789,7 @@ static int ft5x06_collect_finger(struct ft5x06_data *ft5x06,
 		finger[id].y        = ((yh&0x0f)<<8)|yl;
 		finger[id].size     = size;
 		finger[id].pressure = pressure;
+		finger[id].time     = ktime_to_ms(ktime_get());
 		finger[id].detect   = (xh&FT5X0X_EVENT_MASK) != FT5X0X_EVENT_UP;
 
 		if (ft5x06->dbgdump)
@@ -865,9 +872,31 @@ static void ft5x06_report_touchevent(struct ft5x06_data *ft5x06,
 			input_mt_report_slot_state(ft5x06->input, MT_TOOL_FINGER, 0);
 			input_report_abs(ft5x06->input, ABS_MT_TRACKING_ID, -1);
 #endif
+			if (i == 0)
+				ft5x06->touch_cnt = true;
 			continue;
 		}
 
+		if ((ft5x06->in_suspend) && (ft5x06->d2w_switch)) {
+			if (ft5x06->touch_cnt == false) {
+				ft5x06->power_finger = finger[i];
+			} else {
+				ft5x06->touch_cnt = false;
+				if (
+					(abs(finger[i].x - ft5x06->power_finger.x) < 50) &&
+					(abs(finger[i].y - ft5x06->power_finger.y) < 50) &&
+					/* (finger[i].time - ft5x06->power_finger.time > 200) && */
+					/* do we need another check for *pretty quick* d2w? */
+					(finger[i].time - ft5x06->power_finger.time < 500)
+					) {
+					input_report_key(ft5x06->power_input, KEY_POWER, 1);
+					input_report_key(ft5x06->power_input, KEY_POWER, 0);
+					input_sync(ft5x06->power_input);
+					pr_info("%s: d2w: power key sent\n", __func__);
+				} else
+					ft5x06->power_finger = finger[i];
+			}
+		} else {
 #ifdef CONFIG_TOUCHSCREEN_FT5X06_TYPEB
 		input_mt_report_slot_state(ft5x06->input, MT_TOOL_FINGER, 1);
 #endif
@@ -889,6 +918,7 @@ static void ft5x06_report_touchevent(struct ft5x06_data *ft5x06,
 				"tch(%02d): %04d %04d %03d %03d\n",
 				i, finger[i].x, finger[i].y,
 				finger[i].pressure, finger[i].size);
+		}
 	}
 #ifndef CONFIG_TOUCHSCREEN_FT5X06_TYPEB
 	if (!mt_sync_sent) {
@@ -923,14 +953,21 @@ int ft5x06_suspend(struct ft5x06_data *ft5x06)
 {
 	int error = 0;
 
-	disable_irq(ft5x06->irq);
+	if (ft5x06->d2w_switch)
+		enable_irq_wake(ft5x06->irq);
+	else
+		disable_irq(ft5x06->irq);
 	mutex_lock(&ft5x06->mutex);
 	memset(ft5x06->tracker, 0, sizeof(ft5x06->tracker));
 
 	ft5x06->in_suspend = true;
 	cancel_delayed_work_sync(&ft5x06->noise_filter_delayed_work);
-	error = ft5x06_write_byte(ft5x06,
-			FT5X0X_ID_G_PMODE, FT5X0X_POWER_HIBERNATE);
+	if (ft5x06->d2w_switch)
+		error = ft5x06_write_byte(ft5x06,
+				FT5X0X_ID_G_PMODE, FT5X0X_POWER_MONITOR);
+	else
+		error = ft5x06_write_byte(ft5x06,
+				FT5X0X_ID_G_PMODE, FT5X0X_POWER_HIBERNATE);
 
 	mutex_unlock(&ft5x06->mutex);
 
@@ -944,17 +981,23 @@ int ft5x06_resume(struct ft5x06_data *ft5x06)
 
 	mutex_lock(&ft5x06->mutex);
 
-	/* reset device */
-	gpio_set_value_cansleep(pdata->reset_gpio, 0);
-	msleep(20);
-	gpio_set_value_cansleep(pdata->reset_gpio, 1);
-	msleep(50);
+	if (!ft5x06->d2w_switch) { // if !d2w enabled, device goes to hibernate.
+		//reset iff in hibernate mode
+		/* reset device */
+		gpio_set_value_cansleep(pdata->reset_gpio, 0);
+		msleep(20);
+		gpio_set_value_cansleep(pdata->reset_gpio, 1);
+		msleep(50);
+	}
 
 	schedule_delayed_work(&ft5x06->noise_filter_delayed_work,
 				NOISE_FILTER_DELAY);
 	ft5x06->in_suspend = false;
 	mutex_unlock(&ft5x06->mutex);
-	enable_irq(ft5x06->irq);
+	if (ft5x06->d2w_switch)
+		disable_irq_wake(ft5x06->irq);
+	else
+		enable_irq(ft5x06->irq);
 
 	return 0;
 }
@@ -985,6 +1028,9 @@ static int fb_notifier_callback(struct notifier_block *self,
 				ft5x06_suspend(ft5x06);
 				break;
 		}
+
+		// reset touch_cnt variable upon FB blank
+		ft5x06->touch_cnt = false;
 	}
 
 	return NOTIFY_OK;
@@ -1428,6 +1474,50 @@ static ssize_t ft5x06_selftest_show(struct device *dev,
 	return sprintf(&buf[0], "%u\n", ft5x06->test_result);
 }
 
+static ssize_t ft5x06_d2w_switch_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	struct ft5x06_data *ft5x06 = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d\n", ft5x06->d2w_switch);
+}
+
+static ssize_t ft5x06_d2w_switch_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	struct ft5x06_data *ft5x06 = dev_get_drvdata(dev);
+	struct ft5x06_ts_platform_data *pdata = ft5x06->dev->platform_data;
+
+	if (buf[0] == '0') {
+		if (ft5x06->in_suspend) {
+			if (ft5x06->d2w_switch) {
+				disable_irq_wake(ft5x06->irq);
+				disable_irq(ft5x06->irq);
+			}
+		}
+		ft5x06->d2w_switch = 0;
+	} else if (buf[0] == '1') {
+		if (ft5x06->in_suspend) {
+			if (ft5x06->d2w_switch == 0) {
+				/* reset panel */
+				mutex_lock(&ft5x06->mutex);
+				gpio_set_value_cansleep(pdata->reset_gpio, 0);
+				msleep(20);
+				gpio_set_value_cansleep(pdata->reset_gpio, 1);
+				msleep(50);
+				mutex_unlock(&ft5x06->mutex);
+
+				enable_irq(ft5x06->irq);
+				enable_irq_wake(ft5x06->irq);
+			}
+		}
+		ft5x06->d2w_switch = 1;
+	}
+
+	return count;
+}
+
 /* sysfs */
 static DEVICE_ATTR(tpfwver, 0644, ft5x06_tpfwver_show, NULL);
 static DEVICE_ATTR(object, 0644, ft5x06_object_show, ft5x06_object_store);
@@ -1435,6 +1525,7 @@ static DEVICE_ATTR(dbgdump, 0644, ft5x06_dbgdump_show, ft5x06_dbgdump_store);
 static DEVICE_ATTR(updatefw, 0200, NULL, ft5x06_updatefw_store);
 static DEVICE_ATTR(rawdatashow, 0644, ft5x06_rawdata_show, NULL);
 static DEVICE_ATTR(selftest, 0644, ft5x06_selftest_show, ft5x06_selftest_store);
+static DEVICE_ATTR(d2w_switch, 0644, ft5x06_d2w_switch_show, ft5x06_d2w_switch_store);
 
 static struct attribute *ft5x06_attrs[] = {
 	&dev_attr_tpfwver.attr,
@@ -1443,6 +1534,7 @@ static struct attribute *ft5x06_attrs[] = {
 	&dev_attr_updatefw.attr,
 	&dev_attr_rawdatashow.attr,
 	&dev_attr_selftest.attr,
+	&dev_attr_d2w_switch.attr,
 	NULL
 };
 
@@ -1930,6 +2022,28 @@ struct ft5x06_data *ft5x06_probe(struct device *dev,
 	set_bit(EV_KEY, ft5x06->input->evbit);
 	set_bit(EV_ABS, ft5x06->input->evbit);
 
+	// POWER
+	memset(&ft5x06->power_finger, 0, sizeof(ft5x06->power_finger));
+	ft5x06->d2w_switch = 1; // enable d2w by default
+	ft5x06->touch_cnt = false; // touch_cnt variable false by default
+	ft5x06->power_input = input_allocate_device();
+	if (!ft5x06->power_input)
+	{
+		dev_err(dev, "failed to allocate power key\n");
+		goto err_free_input;
+	}
+
+	input_set_capability(ft5x06->power_input, EV_KEY, KEY_POWER);
+	ft5x06->power_input->name = "ft5x06_power";
+	ft5x06->power_input->phys = "ft5x06_power/input0";
+
+	error = input_register_device(ft5x06->power_input);
+	if (error) {
+		dev_err(dev, "failed to register power key device\n");
+		goto err_free_input;
+	}
+	// POWER
+
 	error = ft5x06_read_byte(ft5x06, FT5X0X_REG_CHIP_ID, &ft5x06->chip_id);
 	if (error) {
 		dev_err(dev, "failed to read chip id\n");
@@ -1960,7 +2074,7 @@ struct ft5x06_data *ft5x06_probe(struct device *dev,
 
 	/* start interrupt process */
 	error = request_threaded_irq(ft5x06->irq, NULL, ft5x06_interrupt,
-				IRQF_TRIGGER_FALLING, "ft5x06", ft5x06);
+				IRQF_TRIGGER_FALLING | IRQF_NO_SUSPEND, "ft5x06", ft5x06);
 	if (error) {
 		dev_err(dev, "fail to request interrupt\n");
 		goto err_free_phys;
