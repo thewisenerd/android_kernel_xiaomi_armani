@@ -877,7 +877,7 @@ static void ft5x06_report_touchevent(struct ft5x06_data *ft5x06,
 			continue;
 		}
 
-		if ((ft5x06->in_suspend) && (ft5x06->d2w_switch)) {
+		if ((ft5x06->in_suspend) && (ft5x06->d2w_switch) && (!(in_call))) {
 			if (ft5x06->touch_cnt == false) {
 				ft5x06->power_finger = finger[i];
 			} else {
@@ -896,6 +896,8 @@ static void ft5x06_report_touchevent(struct ft5x06_data *ft5x06,
 				} else
 					ft5x06->power_finger = finger[i];
 			}
+		} else if (ft5x06->in_suspend && in_call) {
+			; // in phone_call; do nothing.
 		} else {
 #ifdef CONFIG_TOUCHSCREEN_FT5X06_TYPEB
 		input_mt_report_slot_state(ft5x06->input, MT_TOOL_FINGER, 1);

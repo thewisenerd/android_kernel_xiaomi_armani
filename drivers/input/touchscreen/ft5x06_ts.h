@@ -21,6 +21,8 @@
 struct device;
 struct ft5x06_data;
 
+extern int in_call;
+
 struct ft5x06_bus_ops {
 	u16 bustype;
 	int (*recv)(struct device *dev, void *buf, int len);

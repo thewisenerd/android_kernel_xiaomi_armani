@@ -28,6 +28,10 @@
 #include "audio_acdb.h"
 #include "q6voice.h"
 
+#ifdef CONFIG_TOUCHSCREEN_FT5X06
+#include "../../../drivers/input/touchscreen/ft5x06_ts.h"
+int in_call = false;
+#endif
 
 #define TIMEOUT_MS 300
 
@@ -4854,6 +4858,9 @@ int voc_end_voice_call(uint32_t session_id)
 	if (common.ec_ref_ext)
 		voc_set_ext_ec_ref(AFE_PORT_INVALID, false);
 
+#ifdef CONFIG_TOUCHSCREEN_FT5X06
+	in_call = false;
+#endif
 	mutex_unlock(&v->lock);
 	return ret;
 }
@@ -5065,6 +5072,9 @@ int voc_start_voice_call(uint32_t session_id)
 		ret = -EINVAL;
 		goto fail;
 	}
+#ifdef CONFIG_TOUCHSCREEN_FT5X06
+	in_call = false;
+#endif
 fail:
 	mutex_unlock(&v->lock);
 	return ret;
