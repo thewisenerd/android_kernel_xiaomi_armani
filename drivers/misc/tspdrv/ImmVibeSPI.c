@@ -469,7 +469,9 @@ VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex, VibeUInt16 n
 	return VIBE_E_FAIL;
     }
 
+#ifdef VIBE_DEBUG
     pr_debug("%s: level = %d\n", __func__, level);
+#endif
 
     isa1000_vib_set_level( level);
 
